@@ -128,6 +128,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "project_events_phase_id_fkey"
+            columns: ["phase_id"]
+            isOneToOne: false
+            referencedRelation: "project_phases"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "project_events_project_id_fkey"
             columns: ["project_id"]
             isOneToOne: false
@@ -175,6 +182,44 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      project_phases: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          position: number
+          project_id: string
+          status: Database["public"]["Enums"]["phase_status"]
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          position: number
+          project_id: string
+          status?: Database["public"]["Enums"]["phase_status"]
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          position?: number
+          project_id?: string
+          status?: Database["public"]["Enums"]["phase_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_phases_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
             referencedColumns: ["id"]
           },
         ]
@@ -276,6 +321,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "task_events_phase_id_fkey"
+            columns: ["phase_id"]
+            isOneToOne: false
+            referencedRelation: "task_phases"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "task_events_task_id_fkey"
             columns: ["task_id"]
             isOneToOne: false
@@ -326,6 +378,44 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      task_phases: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          position: number
+          status: Database["public"]["Enums"]["phase_status"]
+          task_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          position: number
+          status?: Database["public"]["Enums"]["phase_status"]
+          task_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          position?: number
+          status?: Database["public"]["Enums"]["phase_status"]
+          task_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_phases_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
             referencedColumns: ["id"]
           },
         ]
@@ -389,13 +479,32 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      accept_project_phase: { Args: { p_phase_id: string }; Returns: undefined }
+      accept_task_phase: { Args: { p_phase_id: string }; Returns: undefined }
+      reject_project_phase: {
+        Args: { p_phase_id: string; p_reason: string }
+        Returns: undefined
+      }
+      reject_task_phase: {
+        Args: { p_phase_id: string; p_reason: string }
+        Returns: undefined
+      }
       reject_task_submission: {
         Args: { p_reason: string; p_task_id: string }
         Returns: undefined
       }
       set_ceo: { Args: { new_ceo_id: string }; Returns: undefined }
+      submit_project_phases: {
+        Args: { p_phase_ids: string[]; p_project_id: string }
+        Returns: undefined
+      }
+      submit_task_phases: {
+        Args: { p_phase_ids: string[]; p_task_id: string }
+        Returns: undefined
+      }
     }
     Enums: {
+      phase_status: "pending" | "submitted" | "accepted"
       project_status: "open" | "in_progress" | "completed" | "closed"
       task_member_role: "assignee" | "collaborator"
       task_status:
@@ -538,6 +647,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      phase_status: ["pending", "submitted", "accepted"],
       project_status: ["open", "in_progress", "completed", "closed"],
       task_member_role: ["assignee", "collaborator"],
       task_status: [

@@ -6,6 +6,9 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar } from "@/components/ui/avatar";
 import { TASK_STATUS_LABEL, TASK_STATUS_TONE } from "@/lib/badge-tones";
 import { TaskStatusButton, TaskRejectControl } from "@/components/tasks/task-status-controls";
+import { Stepper } from "@/components/ui/stepper";
+import { SubmitPhasesForm } from "@/components/phases/submit-phases-form";
+import { PhaseDecision } from "@/components/phases/phase-decision";
 
 export default async function TaskDetailPage({
   params,
@@ -20,7 +23,7 @@ export default async function TaskDetailPage({
   } = await supabase.auth.getUser();
   if (!user) redirect("/");
 
-  const [{ data: task }, { data: members }] = await Promise.all([
+  const [{ data: task }, { data: members }, { data: phases }] = await Promise.all([
     supabase
       .from("tasks")
       .select(
@@ -32,6 +35,11 @@ export default async function TaskDetailPage({
       .from("task_members")
       .select("user_id, role, profiles!task_members_user_id_fkey(full_name, email, avatar_path)")
       .eq("task_id", taskId),
+    supabase
+      .from("task_phases")
+      .select("id, name, status")
+      .eq("task_id", taskId)
+      .order("position"),
   ]);
 
   if (!task) {
@@ -115,11 +123,41 @@ export default async function TaskDetailPage({
 
       <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-3">
         <Card className="lg:col-span-2">
-          <CardHeader title="Activity" description="Updates and chat are coming soon." />
+          <CardHeader title="Progress" description="Updates and chat are coming soon." />
           <CardBody>
-            <p className="text-sm text-zinc-500 dark:text-zinc-400">
-              This is where phase progress, the update log, and task chat will appear.
-            </p>
+            {!phases || phases.length === 0 ? (
+              <p className="text-sm text-zinc-500 dark:text-zinc-400">
+                No phases defined for this task.
+              </p>
+            ) : (
+              <>
+                <Stepper phases={phases} />
+                {isAssignee &&
+                  task.status !== "completed" &&
+                  task.status !== "terminated" && (
+                    <SubmitPhasesForm
+                      parentType="task"
+                      parentId={task.id}
+                      pendingPhases={phases.filter((p) => p.status === "pending")}
+                    />
+                  )}
+                {isCreator && (
+                  <div className="mt-3 flex flex-col gap-2">
+                    {phases
+                      .filter((p) => p.status === "submitted")
+                      .map((phase) => (
+                        <PhaseDecision
+                          key={phase.id}
+                          parentType="task"
+                          parentId={task.id}
+                          phaseId={phase.id}
+                          phaseName={phase.name}
+                        />
+                      ))}
+                  </div>
+                )}
+              </>
+            )}
           </CardBody>
         </Card>
 

@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { getErrorMessage } from "@/lib/error-message";
+import { parsePhaseNames } from "@/lib/phase-names";
 import type { Enums } from "@/lib/types/database";
 
 export type ProjectState = { error?: string } | undefined;
@@ -85,6 +86,20 @@ export async function createProject(
       );
       if (membersError) {
         throw new Error(membersError.message);
+      }
+    }
+
+    const phaseNames = parsePhaseNames(String(formData.get("phases") ?? ""));
+    if (phaseNames.length > 0) {
+      const { error: phasesError } = await supabase.from("project_phases").insert(
+        phaseNames.map((phaseName, index) => ({
+          project_id: project.id,
+          name: phaseName,
+          position: index,
+        }))
+      );
+      if (phasesError) {
+        throw new Error(phasesError.message);
       }
     }
 

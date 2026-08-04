@@ -20,6 +20,14 @@ export function ProjectForm({ employees }: { employees: Employee[] }) {
         <Textarea id="description" name="description" rows={3} />
       </FormField>
 
+      <FormField
+        label="Phases"
+        htmlFor="phases"
+        hint="Optional. Comma-separated milestones, e.g. Kickoff, Build, Launch."
+      >
+        <TextInput id="phases" name="phases" placeholder="Kickoff, Build, Launch" />
+      </FormField>
+
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <FormField label="Start date" htmlFor="start_date">
           <TextInput id="start_date" name="start_date" type="date" required />

@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { getErrorMessage } from "@/lib/error-message";
+import { parsePhaseNames } from "@/lib/phase-names";
 import type { Enums } from "@/lib/types/database";
 
 export type TaskState = { error?: string } | undefined;
@@ -77,6 +78,20 @@ export async function createTask(
     const { error: membersError } = await supabase.from("task_members").insert(memberRows);
     if (membersError) {
       throw new Error(membersError.message);
+    }
+
+    const phaseNames = parsePhaseNames(String(formData.get("phases") ?? ""));
+    if (phaseNames.length > 0) {
+      const { error: phasesError } = await supabase.from("task_phases").insert(
+        phaseNames.map((phaseName, index) => ({
+          task_id: task.id,
+          name: phaseName,
+          position: index,
+        }))
+      );
+      if (phasesError) {
+        throw new Error(phasesError.message);
+      }
     }
 
     revalidatePath("/dashboard");

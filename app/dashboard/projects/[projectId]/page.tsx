@@ -7,6 +7,9 @@ import { Avatar } from "@/components/ui/avatar";
 import { PROJECT_STATUS_LABEL, PROJECT_STATUS_TONE, TASK_STATUS_LABEL, TASK_STATUS_TONE } from "@/lib/badge-tones";
 import { ProjectStatusButton } from "@/components/projects/status-button";
 import { AddMemberForm, RemoveMemberButton } from "@/components/projects/member-actions";
+import { Stepper } from "@/components/ui/stepper";
+import { SubmitPhasesForm } from "@/components/phases/submit-phases-form";
+import { PhaseDecision } from "@/components/phases/phase-decision";
 
 export default async function ProjectDetailPage({
   params,
@@ -21,25 +24,31 @@ export default async function ProjectDetailPage({
   } = await supabase.auth.getUser();
   if (!user) redirect("/");
 
-  const [{ data: project }, { data: members }, { data: me }, { data: tasks }] = await Promise.all([
-    supabase
-      .from("projects")
-      .select(
-        "id, name, description, status, start_date, deadline, lead_id, created_by, lead:profiles!projects_lead_id_fkey(full_name, email, avatar_path)"
-      )
-      .eq("id", projectId)
-      .single(),
-    supabase
-      .from("project_members")
-      .select("user_id, profiles!project_members_user_id_fkey(full_name, email, avatar_path, role)")
-      .eq("project_id", projectId),
-    supabase.from("profiles").select("id, role").eq("id", user.id).single(),
-    supabase
-      .from("tasks")
-      .select("id, name, status, end_date")
-      .eq("project_id", projectId)
-      .order("end_date"),
-  ]);
+  const [{ data: project }, { data: members }, { data: me }, { data: tasks }, { data: phases }] =
+    await Promise.all([
+      supabase
+        .from("projects")
+        .select(
+          "id, name, description, status, start_date, deadline, lead_id, created_by, lead:profiles!projects_lead_id_fkey(full_name, email, avatar_path)"
+        )
+        .eq("id", projectId)
+        .single(),
+      supabase
+        .from("project_members")
+        .select("user_id, profiles!project_members_user_id_fkey(full_name, email, avatar_path, role)")
+        .eq("project_id", projectId),
+      supabase.from("profiles").select("id, role").eq("id", user.id).single(),
+      supabase
+        .from("tasks")
+        .select("id, name, status, end_date")
+        .eq("project_id", projectId)
+        .order("end_date"),
+      supabase
+        .from("project_phases")
+        .select("id, name, status")
+        .eq("project_id", projectId)
+        .order("position"),
+    ]);
 
   if (!project) {
     notFound();
@@ -152,6 +161,42 @@ export default async function ProjectDetailPage({
                   </li>
                 ))}
               </ul>
+            )}
+          </CardBody>
+        </Card>
+
+        <Card>
+          <CardHeader title="Phases" description="Independent of sub-task status." />
+          <CardBody>
+            {!phases || phases.length === 0 ? (
+              <p className="text-sm text-zinc-500 dark:text-zinc-400">No phases defined.</p>
+            ) : (
+              <>
+                <Stepper phases={phases} />
+                {isMember &&
+                  project.status !== "closed" && (
+                    <SubmitPhasesForm
+                      parentType="project"
+                      parentId={project.id}
+                      pendingPhases={phases.filter((p) => p.status === "pending")}
+                    />
+                  )}
+                {isCreator && (
+                  <div className="mt-3 flex flex-col gap-2">
+                    {phases
+                      .filter((p) => p.status === "submitted")
+                      .map((phase) => (
+                        <PhaseDecision
+                          key={phase.id}
+                          parentType="project"
+                          parentId={project.id}
+                          phaseId={phase.id}
+                          phaseName={phase.name}
+                        />
+                      ))}
+                  </div>
+                )}
+              </>
             )}
           </CardBody>
         </Card>
