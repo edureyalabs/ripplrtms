@@ -75,7 +75,7 @@ function LoginForm() {
                 autoComplete="email"
                 placeholder="you@ripplr.com"
                 required
-                className="rounded-md border border-zinc-300 bg-white px-3 py-2.5 text-sm text-zinc-950 outline-none transition-colors focus:border-[#0b2340] focus:ring-1 focus:ring-[#0b2340] dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50 dark:focus:border-teal-400 dark:focus:ring-teal-400"
+                className="rounded-md border border-zinc-300 bg-white px-3 py-2.5 text-sm text-zinc-950 outline-none transition-colors focus:border-brand-900 focus:ring-1 focus:ring-brand-900 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50 dark:focus:border-teal-400 dark:focus:ring-teal-400"
               />
             </div>
 
@@ -94,7 +94,7 @@ function LoginForm() {
                 type="password"
                 autoComplete="current-password"
                 required
-                className="rounded-md border border-zinc-300 bg-white px-3 py-2.5 text-sm text-zinc-950 outline-none transition-colors focus:border-[#0b2340] focus:ring-1 focus:ring-[#0b2340] dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50 dark:focus:border-teal-400 dark:focus:ring-teal-400"
+                className="rounded-md border border-zinc-300 bg-white px-3 py-2.5 text-sm text-zinc-950 outline-none transition-colors focus:border-brand-900 focus:ring-1 focus:ring-brand-900 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50 dark:focus:border-teal-400 dark:focus:ring-teal-400"
               />
             </div>
 
@@ -106,7 +106,7 @@ function LoginForm() {
 
             <SubmitButton
               pendingLabel="Signing in..."
-              className="mt-2 flex h-11 items-center justify-center gap-2 rounded-md bg-[#0b2340] px-5 text-sm font-semibold text-white transition-colors hover:bg-[#0f2d52] disabled:cursor-not-allowed disabled:opacity-70 dark:bg-teal-500 dark:text-zinc-950 dark:hover:bg-teal-400"
+              className="mt-2 flex h-11 items-center justify-center gap-2 rounded-md bg-brand-900 px-5 text-sm font-semibold text-white transition-colors hover:bg-brand-800 disabled:cursor-not-allowed disabled:opacity-70 dark:bg-teal-500 dark:text-zinc-950 dark:hover:bg-teal-400"
             >
               Sign in
             </SubmitButton>

@@ -17,7 +17,7 @@ const features = [
 
 export function AuthBrandPanel() {
   return (
-    <div className="relative hidden w-full flex-col justify-between overflow-hidden bg-[#0b2340] px-16 py-14 text-white lg:flex lg:w-3/4">
+    <div className="relative hidden w-full flex-col justify-between overflow-hidden bg-brand-900 px-16 py-14 text-white lg:flex lg:w-3/4">
       <div
         aria-hidden
         className="pointer-events-none absolute inset-0 opacity-[0.07]"
