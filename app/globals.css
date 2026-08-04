@@ -38,6 +38,12 @@
   --color-status-completed: #059669;
   --color-status-terminated: #dc2626;
 
+  /* Urgency tones for deadline-aware chips */
+  --color-urgency-overdue: #dc2626;
+  --color-urgency-today: #d97706;
+  --color-urgency-soon: #2563eb;
+  --color-urgency-later: #71717a;
+
   --radius-card: 0.875rem;
   --shadow-card: 0 1px 2px rgba(15, 23, 42, 0.04), 0 1px 8px rgba(15, 23, 42, 0.04);
   --shadow-card-hover: 0 4px 16px rgba(15, 23, 42, 0.08);
@@ -55,4 +61,16 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(120, 120, 130, 0.35);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
 }

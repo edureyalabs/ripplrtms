@@ -7,7 +7,7 @@ import { getErrorMessage } from "@/lib/error-message";
 import { parsePhaseNames } from "@/lib/phase-names";
 import type { Enums } from "@/lib/types/database";
 
-export type TaskState = { error?: string } | undefined;
+export type TaskState = { error?: string; success?: boolean } | undefined;
 
 export async function createTask(
   _prevState: TaskState,
@@ -109,6 +109,46 @@ export async function createTask(
   revalidatePath("/dashboard");
   if (projectId) revalidatePath(`/dashboard/projects/${projectId}`);
   redirect(`/dashboard/tasks/${newTaskId}`);
+}
+
+export async function updateTaskDetails(
+  _prevState: TaskState,
+  formData: FormData
+): Promise<TaskState> {
+  const id = String(formData.get("id") ?? "");
+  const name = String(formData.get("name") ?? "").trim();
+  const description = String(formData.get("description") ?? "").trim();
+  const startDate = String(formData.get("start_date") ?? "");
+  const endDate = String(formData.get("end_date") ?? "");
+
+  if (!id || !name || !startDate || !endDate) {
+    return { error: "Name, start date, and end date are required." };
+  }
+  if (endDate < startDate) {
+    return { error: "End date must be on or after the start date." };
+  }
+
+  try {
+    const supabase = await createClient();
+    const { error } = await supabase
+      .from("tasks")
+      .update({
+        name,
+        description: description || null,
+        start_date: startDate,
+        end_date: endDate,
+      })
+      .eq("id", id);
+    if (error) {
+      throw new Error(error.message);
+    }
+  } catch (err) {
+    return { error: getErrorMessage(err, "Could not update the task.") };
+  }
+
+  revalidatePath(`/dashboard/tasks/${id}`);
+  revalidatePath("/dashboard");
+  return { success: true };
 }
 
 export async function updateTaskStatus(
