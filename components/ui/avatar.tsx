@@ -46,7 +46,7 @@ export function Avatar({
 
   return (
     <span
-      className={`${SIZES[size]} flex shrink-0 items-center justify-center rounded-full bg-brand-900 font-semibold text-white dark:bg-teal-500 dark:text-zinc-950`}
+      className={`${SIZES[size]} flex shrink-0 items-center justify-center rounded-full bg-accent-600 font-semibold text-white dark:bg-accent-500 dark:text-white`}
     >
       {initials(name)}
     </span>

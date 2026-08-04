@@ -96,7 +96,7 @@ export function AssignRoleForm({
 
       <SubmitButton
         pendingLabel="Saving..."
-        className="mt-2 flex h-10 w-fit items-center justify-center gap-2 rounded-md bg-brand-900 px-5 text-sm font-semibold text-white transition-colors hover:bg-brand-800 disabled:cursor-not-allowed disabled:opacity-70 dark:bg-teal-500 dark:text-zinc-950 dark:hover:bg-teal-400"
+        className="mt-2 flex h-10 w-fit items-center justify-center gap-2 rounded-md bg-accent-600 px-5 text-sm font-semibold text-white transition-colors hover:bg-accent-500 disabled:cursor-not-allowed disabled:opacity-70 dark:bg-accent-500 dark:text-white dark:hover:bg-accent-600"
       >
         Save
       </SubmitButton>

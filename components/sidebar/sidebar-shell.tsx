@@ -29,7 +29,7 @@ export function SidebarShell({
   const items = navItemsForRole(profile.role);
 
   return (
-    <div className="flex min-h-screen bg-zinc-50 dark:bg-zinc-950">
+    <div className="flex min-h-screen bg-background">
       <div className="flex items-center justify-between border-b border-zinc-200 bg-brand-900 px-4 py-3 lg:hidden">
         <Image src="/logo.jpg" alt="Ripplr" width={800} height={200} className="h-6 w-auto" />
         <button
@@ -61,9 +61,9 @@ export function SidebarShell({
                 key={item.href}
                 href={item.href}
                 onClick={() => setMobileOpen(false)}
-                className={`rounded-md px-3 py-2 text-sm font-medium transition-colors ${
+                className={`rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
                   active
-                    ? "bg-white/10 text-white"
+                    ? "bg-white/10 text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.06)]"
                     : "text-slate-300 hover:bg-white/5 hover:text-white"
                 }`}
               >

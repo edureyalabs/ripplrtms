@@ -1,8 +1,8 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #f7f8fa;
+  --foreground: #0f1115;
 }
 
 @theme inline {
@@ -11,15 +11,42 @@
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 
+  /* Sidebar chrome — kept from the original brand scale */
   --color-brand-950: #08192e;
   --color-brand-900: #0b2340;
   --color-brand-800: #0f2d52;
   --color-brand-700: #143a68;
+
+  /* Neutral surface scale for cards/panels, distinct from raw zinc */
+  --color-surface-0: #ffffff;
+  --color-surface-50: #f7f8fa;
+  --color-surface-100: #eef0f4;
+  --color-surface-border: #e2e5eb;
+  --color-surface-0-dark: #16181d;
+  --color-surface-50-dark: #1a1c22;
+  --color-surface-border-dark: #2a2d36;
+
+  /* Accent for primary actions/links, distinct from the navy sidebar */
+  --color-accent-50: #eef2ff;
+  --color-accent-500: #6366f1;
+  --color-accent-600: #4f46e5;
+
+  /* Status tones reused by Badge/Stepper */
+  --color-status-open: #71717a;
+  --color-status-progress: #2563eb;
+  --color-status-submitted: #d97706;
+  --color-status-completed: #059669;
+  --color-status-terminated: #dc2626;
+
+  --radius-card: 0.875rem;
+  --shadow-card: 0 1px 2px rgba(15, 23, 42, 0.04), 0 1px 8px rgba(15, 23, 42, 0.04);
+  --shadow-card-hover: 0 4px 16px rgba(15, 23, 42, 0.08);
+  --shadow-popover: 0 8px 24px rgba(15, 23, 42, 0.14);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
+    --background: #0b0c0f;
     --foreground: #ededed;
   }
 }
@@ -27,5 +54,5 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans), Arial, Helvetica, sans-serif;
 }

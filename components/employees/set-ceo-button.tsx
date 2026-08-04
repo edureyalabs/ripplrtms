@@ -12,7 +12,7 @@ export function SetCeoButton({ userId }: { userId: string }) {
       <input type="hidden" name="user_id" value={userId} />
       <SubmitButton
         pendingLabel="Setting CEO..."
-        className="flex h-10 w-fit items-center justify-center gap-2 rounded-md border border-brand-900 px-4 text-sm font-semibold text-brand-900 transition-colors hover:bg-brand-900/5 disabled:cursor-not-allowed disabled:opacity-70 dark:border-teal-400 dark:text-teal-400 dark:hover:bg-teal-400/10"
+        className="flex h-10 w-fit items-center justify-center gap-2 rounded-md border border-accent-600 px-4 text-sm font-semibold text-accent-600 transition-colors hover:bg-accent-50 disabled:cursor-not-allowed disabled:opacity-70 dark:border-accent-500 dark:text-accent-500 dark:hover:bg-accent-500/10"
       >
         Set as CEO
       </SubmitButton>

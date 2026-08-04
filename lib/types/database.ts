@@ -85,6 +85,103 @@ export type Database = {
           },
         ]
       }
+      project_members: {
+        Row: {
+          added_at: string
+          added_by: string
+          project_id: string
+          user_id: string
+        }
+        Insert: {
+          added_at?: string
+          added_by: string
+          project_id: string
+          user_id: string
+        }
+        Update: {
+          added_at?: string
+          added_by?: string
+          project_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_members_added_by_fkey"
+            columns: ["added_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_members_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_members_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      projects: {
+        Row: {
+          created_at: string
+          created_by: string
+          deadline: string
+          description: string | null
+          id: string
+          lead_id: string
+          name: string
+          start_date: string
+          status: Database["public"]["Enums"]["project_status"]
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          deadline: string
+          description?: string | null
+          id?: string
+          lead_id: string
+          name: string
+          start_date: string
+          status?: Database["public"]["Enums"]["project_status"]
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          deadline?: string
+          description?: string | null
+          id?: string
+          lead_id?: string
+          name?: string
+          start_date?: string
+          status?: Database["public"]["Enums"]["project_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "projects_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "projects_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -93,6 +190,7 @@ export type Database = {
       set_ceo: { Args: { new_ceo_id: string }; Returns: undefined }
     }
     Enums: {
+      project_status: "open" | "in_progress" | "completed" | "closed"
       user_role: "admin" | "ceo" | "dept_head" | "team_member"
     }
     CompositeTypes: {
@@ -221,6 +319,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      project_status: ["open", "in_progress", "completed", "closed"],
       user_role: ["admin", "ceo", "dept_head", "team_member"],
     },
   },
