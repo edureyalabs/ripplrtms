@@ -1,6 +1,7 @@
 import Image from "next/image";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { SubmitButton } from "@/components/submit-button";
 
 export default async function DashboardPage() {
   const supabase = await createClient();
@@ -35,12 +36,12 @@ export default async function DashboardPage() {
               {user.email}
             </span>
             <form action="/api/auth/signout" method="post">
-              <button
-                type="submit"
-                className="flex h-9 items-center justify-center rounded-md border border-white/15 px-4 text-sm font-medium text-white transition-colors hover:bg-white/10"
+              <SubmitButton
+                pendingLabel="Logging out..."
+                className="flex h-9 items-center justify-center gap-2 rounded-md border border-white/15 px-4 text-sm font-medium text-white transition-colors hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-70"
               >
                 Log out
-              </button>
+              </SubmitButton>
             </form>
           </div>
         </div>

@@ -5,6 +5,7 @@ import { Suspense, useActionState } from "react";
 import { useSearchParams } from "next/navigation";
 import { login, type AuthState } from "@/lib/actions/auth";
 import { AuthBrandPanel } from "@/components/auth-brand-panel";
+import { SubmitButton } from "@/components/submit-button";
 
 const ERRORS: Record<string, string> = {
   "auth-code-error": "That confirmation link is invalid or has expired.",
@@ -22,7 +23,7 @@ function LoginForm() {
   const searchParams = useSearchParams();
   const authError = ERRORS[searchParams.get("error") ?? ""];
 
-  const [state, formAction, pending] = useActionState<AuthState, FormData>(
+  const [state, formAction] = useActionState<AuthState, FormData>(
     login,
     undefined
   );
@@ -103,13 +104,12 @@ function LoginForm() {
               </p>
             )}
 
-            <button
-              type="submit"
-              disabled={pending}
-              className="mt-2 flex h-11 items-center justify-center rounded-md bg-[#0b2340] px-5 text-sm font-semibold text-white transition-colors hover:bg-[#0f2d52] disabled:opacity-50 dark:bg-teal-500 dark:text-zinc-950 dark:hover:bg-teal-400"
+            <SubmitButton
+              pendingLabel="Signing in..."
+              className="mt-2 flex h-11 items-center justify-center gap-2 rounded-md bg-[#0b2340] px-5 text-sm font-semibold text-white transition-colors hover:bg-[#0f2d52] disabled:cursor-not-allowed disabled:opacity-70 dark:bg-teal-500 dark:text-zinc-950 dark:hover:bg-teal-400"
             >
-              {pending ? "Signing in..." : "Sign in"}
-            </button>
+              Sign in
+            </SubmitButton>
           </form>
 
           <p className="mt-10 text-xs text-zinc-400 dark:text-zinc-600">
