@@ -5,6 +5,7 @@ import { Card, CardHeader, CardBody } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar } from "@/components/ui/avatar";
 import { PROJECT_STATUS_LABEL, PROJECT_STATUS_TONE, TASK_STATUS_LABEL, TASK_STATUS_TONE } from "@/lib/badge-tones";
+import { classifyUrgency, URGENCY_BADGE_TONE, URGENCY_LABEL } from "@/lib/urgency";
 import { ProjectStatusButton } from "@/components/projects/status-button";
 import { AddMemberForm, RemoveMemberButton } from "@/components/projects/member-actions";
 import { Stepper } from "@/components/ui/stepper";
@@ -172,24 +173,30 @@ export default async function ProjectDetailPage({
               <p className="text-sm text-zinc-500 dark:text-zinc-400">No tasks yet.</p>
             ) : (
               <ul className="flex flex-col divide-y divide-surface-border dark:divide-surface-border-dark">
-                {tasks.map((task) => (
-                  <li key={task.id} className="flex items-center justify-between gap-3 py-2.5">
-                    <Link
-                      href={`/dashboard/tasks/${task.id}`}
-                      className="truncate text-sm font-medium text-zinc-900 hover:text-accent-600 dark:text-zinc-100 dark:hover:text-accent-500"
-                    >
-                      {task.name}
-                    </Link>
-                    <div className="flex shrink-0 items-center gap-3">
-                      <span className="text-xs text-zinc-400 dark:text-zinc-600">
-                        {task.end_date}
-                      </span>
-                      <Badge tone={TASK_STATUS_TONE[task.status]}>
-                        {TASK_STATUS_LABEL[task.status]}
-                      </Badge>
-                    </div>
-                  </li>
-                ))}
+                {tasks.map((task) => {
+                  const urgency = classifyUrgency(task.end_date, task.status);
+                  return (
+                    <li key={task.id} className="flex items-center justify-between gap-3 py-2.5">
+                      <Link
+                        href={`/dashboard/tasks/${task.id}`}
+                        className="truncate text-sm font-medium text-zinc-900 hover:text-accent-600 dark:text-zinc-100 dark:hover:text-accent-500"
+                      >
+                        {task.name}
+                      </Link>
+                      <div className="flex shrink-0 items-center gap-2">
+                        <span className="text-xs text-zinc-400 dark:text-zinc-600">
+                          {task.end_date}
+                        </span>
+                        {urgency !== "later" && urgency !== "done" && (
+                          <Badge tone={URGENCY_BADGE_TONE[urgency]}>{URGENCY_LABEL[urgency]}</Badge>
+                        )}
+                        <Badge tone={TASK_STATUS_TONE[task.status]}>
+                          {TASK_STATUS_LABEL[task.status]}
+                        </Badge>
+                      </div>
+                    </li>
+                  );
+                })}
               </ul>
             )}
           </CardBody>
