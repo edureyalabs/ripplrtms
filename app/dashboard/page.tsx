@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 
@@ -12,24 +13,56 @@ export default async function DashboardPage() {
   }
 
   return (
-    <div className="flex flex-1 flex-col bg-zinc-50 px-8 py-12 dark:bg-black">
-      <div className="mx-auto w-full max-w-3xl">
-        <h1 className="text-2xl font-semibold text-black dark:text-zinc-50">
-          Dashboard
+    <div className="flex min-h-screen flex-col bg-zinc-50 dark:bg-zinc-950">
+      <header className="border-b border-zinc-200 bg-[#0b2340] dark:border-zinc-800">
+        <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6">
+          <div className="flex items-center gap-3">
+            <Image
+              src="/logo.jpg"
+              alt="Ripplr"
+              width={800}
+              height={200}
+              priority
+              className="h-6 w-auto rounded-sm"
+            />
+            <span className="hidden text-sm font-medium text-slate-300 sm:inline">
+              Task Management Portal
+            </span>
+          </div>
+
+          <div className="flex items-center gap-4">
+            <span className="hidden text-sm text-slate-300 sm:inline">
+              {user.email}
+            </span>
+            <form action="/api/auth/signout" method="post">
+              <button
+                type="submit"
+                className="flex h-9 items-center justify-center rounded-md border border-white/15 px-4 text-sm font-medium text-white transition-colors hover:bg-white/10"
+              >
+                Log out
+              </button>
+            </form>
+          </div>
+        </div>
+      </header>
+
+      <main className="mx-auto w-full max-w-6xl flex-1 px-6 py-12">
+        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-teal-600 dark:text-teal-400">
+          Overview
+        </p>
+        <h1 className="mt-2 text-2xl font-semibold tracking-tight text-zinc-950 dark:text-zinc-50">
+          Welcome back
         </h1>
-        <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
-          Logged in as {user.email}
+        <p className="mt-1.5 text-sm text-zinc-500 dark:text-zinc-400">
+          Signed in as {user.email}. Your workspace is being set up.
         </p>
 
-        <form action="/api/auth/signout" method="post" className="mt-6">
-          <button
-            type="submit"
-            className="flex h-10 items-center justify-center rounded-full border border-black/[.08] px-5 text-sm font-medium transition-colors hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a]"
-          >
-            Log out
-          </button>
-        </form>
-      </div>
+        <div className="mt-10 rounded-xl border border-dashed border-zinc-300 bg-white p-10 text-center dark:border-zinc-700 dark:bg-zinc-900">
+          <p className="text-sm text-zinc-500 dark:text-zinc-400">
+            Tasks, projects, and team views will appear here.
+          </p>
+        </div>
+      </main>
     </div>
   );
 }
