@@ -1,9 +1,10 @@
+import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { Card, CardHeader, CardBody } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar } from "@/components/ui/avatar";
-import { PROJECT_STATUS_LABEL, PROJECT_STATUS_TONE } from "@/lib/badge-tones";
+import { PROJECT_STATUS_LABEL, PROJECT_STATUS_TONE, TASK_STATUS_LABEL, TASK_STATUS_TONE } from "@/lib/badge-tones";
 import { ProjectStatusButton } from "@/components/projects/status-button";
 import { AddMemberForm, RemoveMemberButton } from "@/components/projects/member-actions";
 
@@ -20,7 +21,7 @@ export default async function ProjectDetailPage({
   } = await supabase.auth.getUser();
   if (!user) redirect("/");
 
-  const [{ data: project }, { data: members }, { data: me }] = await Promise.all([
+  const [{ data: project }, { data: members }, { data: me }, { data: tasks }] = await Promise.all([
     supabase
       .from("projects")
       .select(
@@ -33,6 +34,11 @@ export default async function ProjectDetailPage({
       .select("user_id, profiles!project_members_user_id_fkey(full_name, email, avatar_path, role)")
       .eq("project_id", projectId),
     supabase.from("profiles").select("id, role").eq("id", user.id).single(),
+    supabase
+      .from("tasks")
+      .select("id, name, status, end_date")
+      .eq("project_id", projectId)
+      .order("end_date"),
   ]);
 
   if (!project) {
@@ -108,12 +114,45 @@ export default async function ProjectDetailPage({
 
       <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-3">
         <Card className="lg:col-span-2">
-          <CardHeader title="Activity" description="Tasks, updates, and chat are coming soon." />
+          <CardHeader
+            title="Tasks"
+            description="Phase progress, timeline, and chat are coming soon."
+            action={
+              isMember && (
+                <Link
+                  href={`/dashboard/projects/${project.id}/tasks/new`}
+                  className="flex h-8 items-center justify-center rounded-md border border-surface-border px-3 text-xs font-medium text-zinc-700 transition-colors hover:bg-surface-50 dark:border-surface-border-dark dark:text-zinc-300 dark:hover:bg-surface-50-dark"
+                >
+                  New Task
+                </Link>
+              )
+            }
+          />
           <CardBody>
-            <p className="text-sm text-zinc-500 dark:text-zinc-400">
-              This is where the project&apos;s tasks, phase progress, timeline, and chat will
-              appear.
-            </p>
+            {!tasks || tasks.length === 0 ? (
+              <p className="text-sm text-zinc-500 dark:text-zinc-400">No tasks yet.</p>
+            ) : (
+              <ul className="flex flex-col divide-y divide-surface-border dark:divide-surface-border-dark">
+                {tasks.map((task) => (
+                  <li key={task.id} className="flex items-center justify-between gap-3 py-2.5">
+                    <Link
+                      href={`/dashboard/tasks/${task.id}`}
+                      className="truncate text-sm font-medium text-zinc-900 hover:text-accent-600 dark:text-zinc-100 dark:hover:text-accent-500"
+                    >
+                      {task.name}
+                    </Link>
+                    <div className="flex shrink-0 items-center gap-3">
+                      <span className="text-xs text-zinc-400 dark:text-zinc-600">
+                        {task.end_date}
+                      </span>
+                      <Badge tone={TASK_STATUS_TONE[task.status]}>
+                        {TASK_STATUS_LABEL[task.status]}
+                      </Badge>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
           </CardBody>
         </Card>
 

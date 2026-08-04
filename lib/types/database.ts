@@ -85,6 +85,57 @@ export type Database = {
           },
         ]
       }
+      project_events: {
+        Row: {
+          actor_id: string
+          created_at: string
+          from_status: string | null
+          id: string
+          kind: Database["public"]["Enums"]["update_kind"]
+          phase_id: string | null
+          project_id: string
+          reason: string | null
+          to_status: string | null
+        }
+        Insert: {
+          actor_id: string
+          created_at?: string
+          from_status?: string | null
+          id?: string
+          kind: Database["public"]["Enums"]["update_kind"]
+          phase_id?: string | null
+          project_id: string
+          reason?: string | null
+          to_status?: string | null
+        }
+        Update: {
+          actor_id?: string
+          created_at?: string
+          from_status?: string | null
+          id?: string
+          kind?: Database["public"]["Enums"]["update_kind"]
+          phase_id?: string | null
+          project_id?: string
+          reason?: string | null
+          to_status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_events_actor_id_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_events_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       project_members: {
         Row: {
           added_at: string
@@ -182,15 +233,183 @@ export type Database = {
           },
         ]
       }
+      task_events: {
+        Row: {
+          actor_id: string
+          created_at: string
+          from_status: string | null
+          id: string
+          kind: Database["public"]["Enums"]["update_kind"]
+          phase_id: string | null
+          reason: string | null
+          task_id: string
+          to_status: string | null
+        }
+        Insert: {
+          actor_id: string
+          created_at?: string
+          from_status?: string | null
+          id?: string
+          kind: Database["public"]["Enums"]["update_kind"]
+          phase_id?: string | null
+          reason?: string | null
+          task_id: string
+          to_status?: string | null
+        }
+        Update: {
+          actor_id?: string
+          created_at?: string
+          from_status?: string | null
+          id?: string
+          kind?: Database["public"]["Enums"]["update_kind"]
+          phase_id?: string | null
+          reason?: string | null
+          task_id?: string
+          to_status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_events_actor_id_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "task_events_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      task_members: {
+        Row: {
+          added_at: string
+          added_by: string
+          role: Database["public"]["Enums"]["task_member_role"]
+          task_id: string
+          user_id: string
+        }
+        Insert: {
+          added_at?: string
+          added_by: string
+          role: Database["public"]["Enums"]["task_member_role"]
+          task_id: string
+          user_id: string
+        }
+        Update: {
+          added_at?: string
+          added_by?: string
+          role?: Database["public"]["Enums"]["task_member_role"]
+          task_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_members_added_by_fkey"
+            columns: ["added_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "task_members_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "task_members_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tasks: {
+        Row: {
+          created_at: string
+          created_by: string
+          description: string | null
+          end_date: string
+          id: string
+          name: string
+          project_id: string | null
+          start_date: string
+          status: Database["public"]["Enums"]["task_status"]
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          description?: string | null
+          end_date: string
+          id?: string
+          name: string
+          project_id?: string | null
+          start_date: string
+          status?: Database["public"]["Enums"]["task_status"]
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          end_date?: string
+          id?: string
+          name?: string
+          project_id?: string | null
+          start_date?: string
+          status?: Database["public"]["Enums"]["task_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tasks_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tasks_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
+      reject_task_submission: {
+        Args: { p_reason: string; p_task_id: string }
+        Returns: undefined
+      }
       set_ceo: { Args: { new_ceo_id: string }; Returns: undefined }
     }
     Enums: {
       project_status: "open" | "in_progress" | "completed" | "closed"
+      task_member_role: "assignee" | "collaborator"
+      task_status:
+        | "open"
+        | "in_progress"
+        | "submitted"
+        | "completed"
+        | "terminated"
+      update_kind:
+        | "status_change"
+        | "phase_submitted"
+        | "phase_accepted"
+        | "phase_rejected"
+        | "manual_update"
       user_role: "admin" | "ceo" | "dept_head" | "team_member"
     }
     CompositeTypes: {
@@ -320,6 +539,21 @@ export const Constants = {
   public: {
     Enums: {
       project_status: ["open", "in_progress", "completed", "closed"],
+      task_member_role: ["assignee", "collaborator"],
+      task_status: [
+        "open",
+        "in_progress",
+        "submitted",
+        "completed",
+        "terminated",
+      ],
+      update_kind: [
+        "status_change",
+        "phase_submitted",
+        "phase_accepted",
+        "phase_rejected",
+        "manual_update",
+      ],
       user_role: ["admin", "ceo", "dept_head", "team_member"],
     },
   },
