@@ -719,6 +719,21 @@ export type Database = {
     Functions: {
       accept_project_phase: { Args: { p_phase_id: string }; Returns: undefined }
       accept_task_phase: { Args: { p_phase_id: string }; Returns: undefined }
+      department_task_rollup: {
+        Args: { p_department_id: string }
+        Returns: {
+          dept_head_id: string | null
+          dept_head_name: string | null
+          dept_head_avatar_path: string | null
+          member_count: number
+          open_count: number
+          in_progress_count: number
+          submitted_count: number
+          completed_count: number
+          overdue_not_started_count: number
+          overdue_deadline_count: number
+        }[]
+      }
       reject_project_phase: {
         Args: { p_phase_id: string; p_reason: string }
         Returns: undefined
