@@ -1,16 +1,10 @@
 "use client";
 
 import Image from "next/image";
-import Link from "next/link";
 import { Suspense, useActionState } from "react";
 import { useSearchParams } from "next/navigation";
 import { login, type AuthState } from "@/lib/actions/auth";
 import { AuthBrandPanel } from "@/components/auth-brand-panel";
-
-const NOTICES: Record<string, string> = {
-  "check-email-to-confirm":
-    "Account created. Check your inbox to confirm your email before signing in.",
-};
 
 const ERRORS: Record<string, string> = {
   "auth-code-error": "That confirmation link is invalid or has expired.",
@@ -26,7 +20,6 @@ export default function Home() {
 
 function LoginForm() {
   const searchParams = useSearchParams();
-  const notice = NOTICES[searchParams.get("message") ?? ""];
   const authError = ERRORS[searchParams.get("error") ?? ""];
 
   const [state, formAction, pending] = useActionState<AuthState, FormData>(
@@ -60,11 +53,6 @@ function LoginForm() {
             </p>
           </div>
 
-          {notice && (
-            <p className="mt-6 rounded-md bg-teal-50 px-3 py-2 text-sm text-teal-800 dark:bg-teal-950/40 dark:text-teal-300">
-              {notice}
-            </p>
-          )}
           {authError && (
             <p className="mt-6 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700 dark:bg-red-950/40 dark:text-red-400">
               {authError}
@@ -124,19 +112,9 @@ function LoginForm() {
             </button>
           </form>
 
-          <p className="mt-8 text-sm text-zinc-500 dark:text-zinc-400">
-            Don&apos;t have an account?{" "}
-            <Link
-              href="/signup"
-              className="font-medium text-[#0b2340] hover:underline dark:text-teal-400"
-            >
-              Create one
-            </Link>
-          </p>
-
           <p className="mt-10 text-xs text-zinc-400 dark:text-zinc-600">
-            &copy; {new Date().getFullYear()} Ripplr, Inc. Access restricted
-            to authorized personnel.
+            &copy; {new Date().getFullYear()} Ripplr. Access restricted to
+            authorized personnel.
           </p>
         </div>
       </div>

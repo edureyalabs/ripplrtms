@@ -74,7 +74,7 @@ export function AuthBrandPanel() {
       </div>
 
       <div className="relative z-10 text-xs text-slate-400">
-        &copy; {new Date().getFullYear()} Ripplr, Inc. All rights reserved. ·
+        &copy; {new Date().getFullYear()} Ripplr. All rights reserved. ·
         Authorized personnel only.
       </div>
     </div>
