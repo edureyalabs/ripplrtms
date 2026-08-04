@@ -14,6 +14,102 @@ function revalidateProject(id: string) {
   revalidatePath(`/dashboard/projects/${id}`);
 }
 
+export async function addTaskPhase(
+  _prevState: PhaseState,
+  formData: FormData
+): Promise<PhaseState> {
+  const taskId = String(formData.get("task_id") ?? "");
+  const name = String(formData.get("name") ?? "").trim();
+  if (!taskId || !name) return { error: "Enter a phase name." };
+
+  try {
+    const supabase = await createClient();
+    const { data: existing } = await supabase
+      .from("task_phases")
+      .select("position")
+      .eq("task_id", taskId)
+      .order("position", { ascending: false })
+      .limit(1);
+    const nextPosition = (existing?.[0]?.position ?? -1) + 1;
+
+    const { error } = await supabase
+      .from("task_phases")
+      .insert({ task_id: taskId, name, position: nextPosition });
+    if (error) throw new Error(error.message);
+  } catch (err) {
+    return { error: getErrorMessage(err, "Could not add that phase.") };
+  }
+
+  revalidateTask(taskId);
+}
+
+export async function deleteTaskPhase(
+  _prevState: PhaseState,
+  formData: FormData
+): Promise<PhaseState> {
+  const phaseId = String(formData.get("phase_id") ?? "");
+  const taskId = String(formData.get("task_id") ?? "");
+  if (!phaseId) return { error: "Missing phase." };
+
+  try {
+    const supabase = await createClient();
+    const { error } = await supabase.from("task_phases").delete().eq("id", phaseId);
+    if (error) throw new Error(error.message);
+  } catch (err) {
+    return { error: getErrorMessage(err, "Could not delete that phase.") };
+  }
+
+  if (taskId) revalidateTask(taskId);
+}
+
+export async function addProjectPhase(
+  _prevState: PhaseState,
+  formData: FormData
+): Promise<PhaseState> {
+  const projectId = String(formData.get("project_id") ?? "");
+  const name = String(formData.get("name") ?? "").trim();
+  if (!projectId || !name) return { error: "Enter a phase name." };
+
+  try {
+    const supabase = await createClient();
+    const { data: existing } = await supabase
+      .from("project_phases")
+      .select("position")
+      .eq("project_id", projectId)
+      .order("position", { ascending: false })
+      .limit(1);
+    const nextPosition = (existing?.[0]?.position ?? -1) + 1;
+
+    const { error } = await supabase
+      .from("project_phases")
+      .insert({ project_id: projectId, name, position: nextPosition });
+    if (error) throw new Error(error.message);
+  } catch (err) {
+    return { error: getErrorMessage(err, "Could not add that phase.") };
+  }
+
+  revalidateProject(projectId);
+}
+
+export async function deleteProjectPhase(
+  _prevState: PhaseState,
+  formData: FormData
+): Promise<PhaseState> {
+  const phaseId = String(formData.get("phase_id") ?? "");
+  const projectId = String(formData.get("project_id") ?? "");
+  if (!phaseId) return { error: "Missing phase." };
+
+  try {
+    const supabase = await createClient();
+    const { error } = await supabase.from("project_phases").delete().eq("id", phaseId);
+    if (error) throw new Error(error.message);
+  } catch (err) {
+    return { error: getErrorMessage(err, "Could not delete that phase.") };
+  }
+
+  if (projectId) revalidateProject(projectId);
+}
+
 export async function submitTaskPhases(
   _prevState: PhaseState,
   formData: FormData

@@ -11,6 +11,8 @@ import { TaskStatusButton, TaskRejectControl } from "@/components/tasks/task-sta
 import { Stepper } from "@/components/ui/stepper";
 import { SubmitPhasesForm } from "@/components/phases/submit-phases-form";
 import { PhaseDecision } from "@/components/phases/phase-decision";
+import { PhaseList } from "@/components/phases/phase-list";
+import { AddPhaseForm } from "@/components/phases/add-phase-form";
 import { UpdateForm } from "@/components/collaboration/update-form";
 import { ChatPanel } from "@/components/collaboration/chat-panel";
 import { getTaskTimeline } from "@/lib/queries/timeline";
@@ -176,10 +178,16 @@ export default async function TaskDetailPage({
             <CardHeader title="Phases" />
             <CardBody>
               {!phases || phases.length === 0 ? (
-                <p className="text-sm text-zinc-500 dark:text-zinc-400">No phases defined.</p>
+                <p className="text-sm text-zinc-500 dark:text-zinc-400">No phases yet.</p>
               ) : (
                 <>
                   <Stepper phases={phases} />
+                  <PhaseList
+                    parentType="task"
+                    parentId={task.id}
+                    phases={phases}
+                    canManage={isCreator && !isLocked}
+                  />
                   {isAssignee && !isLocked && (
                     <SubmitPhasesForm
                       parentType="task"
@@ -203,6 +211,11 @@ export default async function TaskDetailPage({
                     </div>
                   )}
                 </>
+              )}
+              {isCreator && !isLocked && (
+                <div className="mt-4 border-t border-surface-border pt-3 dark:border-surface-border-dark">
+                  <AddPhaseForm parentType="task" parentId={task.id} />
+                </div>
               )}
             </CardBody>
           </Card>

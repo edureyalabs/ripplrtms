@@ -27,6 +27,13 @@ export async function createProject(
     return { error: "Deadline must be on or after the start date." };
   }
 
+  const today = new Date().toISOString().slice(0, 10);
+  if (startDate < today) {
+    return { error: "Start date can't be in the past." };
+  }
+
+  let newProjectId: string;
+
   try {
     const supabase = await createClient();
     const {
@@ -103,11 +110,13 @@ export async function createProject(
       }
     }
 
-    revalidatePath("/dashboard/projects");
-    redirect(`/dashboard/projects/${project.id}`);
+    newProjectId = project.id;
   } catch (err) {
     return { error: getErrorMessage(err, "Could not create the project.") };
   }
+
+  revalidatePath("/dashboard/projects");
+  redirect(`/dashboard/projects/${newProjectId}`);
 }
 
 export async function updateProjectStatus(

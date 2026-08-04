@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { getErrorMessage } from "@/lib/error-message";
 
 export type DepartmentState = { error?: string } | undefined;
 
@@ -31,6 +32,39 @@ export async function createDepartment(
 
   revalidatePath("/dashboard/admin/departments");
   redirect("/dashboard/admin/departments");
+}
+
+export async function deleteDepartment(
+  _prevState: DepartmentState,
+  formData: FormData
+): Promise<DepartmentState> {
+  const id = String(formData.get("id") ?? "");
+  if (!id) {
+    return { error: "Missing department." };
+  }
+
+  try {
+    const supabase = await createClient();
+    const { count } = await supabase
+      .from("profiles")
+      .select("id", { count: "exact", head: true })
+      .eq("department_id", id);
+
+    if (count && count > 0) {
+      return {
+        error: `Can't delete: ${count} employee${count === 1 ? "" : "s"} still mapped to this department.`,
+      };
+    }
+
+    const { error } = await supabase.from("departments").delete().eq("id", id);
+    if (error) {
+      throw new Error(error.message);
+    }
+  } catch (err) {
+    return { error: getErrorMessage(err, "Could not delete the department.") };
+  }
+
+  revalidatePath("/dashboard/admin/departments");
 }
 
 export async function updateDepartment(

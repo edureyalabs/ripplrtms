@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { useState, type ReactNode } from "react";
 import { Avatar } from "@/components/ui/avatar";
 import { SubmitButton } from "@/components/submit-button";
+import { logout } from "@/lib/actions/auth";
 import { ROLE_LABELS } from "@/lib/roles";
 import { navItemsForRole } from "@/components/sidebar/nav-items";
 import type { Enums } from "@/lib/types/database";
@@ -31,7 +32,7 @@ export function SidebarShell({
   return (
     <div className="flex min-h-screen bg-background">
       <div className="flex items-center justify-between border-b border-zinc-200 bg-brand-900 px-4 py-3 lg:hidden">
-        <Image src="/logo.jpg" alt="Ripplr" width={800} height={200} className="h-6 w-auto" />
+        <Image src="/logo.jpg" alt="Ripplr" width={800} height={200} className="h-8 w-auto" />
         <button
           type="button"
           onClick={() => setMobileOpen((open) => !open)}
@@ -50,7 +51,7 @@ export function SidebarShell({
           width={800}
           height={200}
           priority
-          className="hidden h-7 w-auto lg:block"
+          className="hidden h-11 w-auto py-1 lg:block"
         />
 
         <nav className="mt-8 flex flex-1 flex-col gap-1">
@@ -83,7 +84,7 @@ export function SidebarShell({
               <p className="text-xs text-slate-400">{ROLE_LABELS[profile.role]}</p>
             </div>
           </div>
-          <form action="/api/auth/signout" method="post" className="mt-4">
+          <form action={logout} className="mt-4">
             <SubmitButton
               pendingLabel="Logging out..."
               className="flex h-9 w-full items-center justify-center gap-2 rounded-md border border-white/15 px-4 text-sm font-medium text-white transition-colors hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-70"

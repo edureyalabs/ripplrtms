@@ -9,6 +9,7 @@ type Employee = { id: string; full_name: string; email: string };
 
 export function ProjectForm({ employees }: { employees: Employee[] }) {
   const [state, formAction] = useActionState<ProjectState, FormData>(createProject, undefined);
+  const today = new Date().toISOString().slice(0, 10);
 
   return (
     <form action={formAction} className="mt-8 flex max-w-2xl flex-col gap-4">
@@ -29,11 +30,11 @@ export function ProjectForm({ employees }: { employees: Employee[] }) {
       </FormField>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <FormField label="Start date" htmlFor="start_date">
-          <TextInput id="start_date" name="start_date" type="date" required />
+        <FormField label="Start date" htmlFor="start_date" hint="Today or later.">
+          <TextInput id="start_date" name="start_date" type="date" required min={today} />
         </FormField>
         <FormField label="Deadline" htmlFor="deadline">
-          <TextInput id="deadline" name="deadline" type="date" required />
+          <TextInput id="deadline" name="deadline" type="date" required min={today} />
         </FormField>
       </div>
 

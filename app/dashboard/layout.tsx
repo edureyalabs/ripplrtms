@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { SidebarShell } from "@/components/sidebar/sidebar-shell";
 import { SubmitButton } from "@/components/submit-button";
+import { logout } from "@/lib/actions/auth";
 
 export default async function DashboardLayout({ children }: { children: ReactNode }) {
   const supabase = await createClient();
@@ -36,7 +37,7 @@ export default async function DashboardLayout({ children }: { children: ReactNod
           An admin still needs to assign your role and department. Check back shortly, or reach
           out to your admin.
         </p>
-        <form action="/api/auth/signout" method="post" className="mt-2">
+        <form action={logout} className="mt-2">
           <SubmitButton
             pendingLabel="Logging out..."
             className="flex h-10 items-center justify-center gap-2 rounded-md border border-zinc-300 px-4 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-70 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-900"

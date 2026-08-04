@@ -2,12 +2,13 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
+import { DeleteDepartmentButton } from "@/components/departments/delete-department-button";
 
 export default async function DepartmentsPage() {
   const supabase = await createClient();
   const { data: departments } = await supabase
     .from("departments")
-    .select("id, name, description, is_active")
+    .select("id, name, description, is_active, profiles(count)")
     .order("name");
 
   return (
@@ -40,34 +41,47 @@ export default async function DepartmentsPage() {
               <tr>
                 <th className="px-5 py-3 font-medium">Name</th>
                 <th className="px-5 py-3 font-medium">Description</th>
+                <th className="px-5 py-3 font-medium">Employees</th>
                 <th className="px-5 py-3 font-medium">Status</th>
                 <th className="px-5 py-3" />
               </tr>
             </thead>
             <tbody className="divide-y divide-surface-border dark:divide-surface-border-dark">
-              {departments.map((dept) => (
-                <tr key={dept.id} className="transition-colors hover:bg-surface-50 dark:hover:bg-surface-50-dark">
-                  <td className="px-5 py-3 font-medium text-zinc-900 dark:text-zinc-100">
-                    {dept.name}
-                  </td>
-                  <td className="px-5 py-3 text-zinc-500 dark:text-zinc-400">
-                    {dept.description || "—"}
-                  </td>
-                  <td className="px-5 py-3">
-                    <Badge tone={dept.is_active ? "success" : "neutral"}>
-                      {dept.is_active ? "Active" : "Archived"}
-                    </Badge>
-                  </td>
-                  <td className="px-5 py-3 text-right">
-                    <Link
-                      href={`/dashboard/admin/departments/${dept.id}/edit`}
-                      className="text-sm font-medium text-accent-600 hover:underline dark:text-accent-500"
-                    >
-                      Edit
-                    </Link>
-                  </td>
-                </tr>
-              ))}
+              {departments.map((dept) => {
+                const employeeCount = dept.profiles[0]?.count ?? 0;
+                return (
+                  <tr
+                    key={dept.id}
+                    className="transition-colors hover:bg-surface-50 dark:hover:bg-surface-50-dark"
+                  >
+                    <td className="px-5 py-3 font-medium text-zinc-900 dark:text-zinc-100">
+                      {dept.name}
+                    </td>
+                    <td className="px-5 py-3 text-zinc-500 dark:text-zinc-400">
+                      {dept.description || "—"}
+                    </td>
+                    <td className="px-5 py-3 text-zinc-500 dark:text-zinc-400">
+                      {employeeCount}
+                    </td>
+                    <td className="px-5 py-3">
+                      <Badge tone={dept.is_active ? "success" : "neutral"}>
+                        {dept.is_active ? "Active" : "Archived"}
+                      </Badge>
+                    </td>
+                    <td className="px-5 py-3">
+                      <div className="flex items-center justify-end gap-4">
+                        <Link
+                          href={`/dashboard/admin/departments/${dept.id}/edit`}
+                          className="text-sm font-medium text-accent-600 hover:underline dark:text-accent-500"
+                        >
+                          Edit
+                        </Link>
+                        {employeeCount === 0 && <DeleteDepartmentButton id={dept.id} />}
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         )}

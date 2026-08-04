@@ -22,6 +22,8 @@ export function TaskForm({
   fixedAssignee?: Candidate;
 }) {
   const [state, formAction] = useActionState<TaskState, FormData>(createTask, undefined);
+  const today = new Date().toISOString().slice(0, 10);
+  const effectiveMinDate = minDate && minDate > today ? minDate : today;
 
   return (
     <form action={formAction} className="mt-8 flex max-w-2xl flex-col gap-4">
@@ -47,13 +49,13 @@ export function TaskForm({
       </FormField>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <FormField label="Start date" htmlFor="start_date">
+        <FormField label="Start date" htmlFor="start_date" hint="Today or later.">
           <TextInput
             id="start_date"
             name="start_date"
             type="date"
             required
-            min={minDate}
+            min={effectiveMinDate}
             max={maxDate}
           />
         </FormField>
@@ -63,7 +65,7 @@ export function TaskForm({
             name="end_date"
             type="date"
             required
-            min={minDate}
+            min={effectiveMinDate}
             max={maxDate}
           />
         </FormField>

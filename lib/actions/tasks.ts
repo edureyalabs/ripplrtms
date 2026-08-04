@@ -34,6 +34,13 @@ export async function createTask(
     return { error: "At least one assignee is required." };
   }
 
+  const today = new Date().toISOString().slice(0, 10);
+  if (startDate < today) {
+    return { error: "Start date can't be in the past." };
+  }
+
+  let newTaskId: string;
+
   try {
     const supabase = await createClient();
     const {
@@ -94,12 +101,14 @@ export async function createTask(
       }
     }
 
-    revalidatePath("/dashboard");
-    if (projectId) revalidatePath(`/dashboard/projects/${projectId}`);
-    redirect(`/dashboard/tasks/${task.id}`);
+    newTaskId = task.id;
   } catch (err) {
     return { error: getErrorMessage(err, "Could not create the task.") };
   }
+
+  revalidatePath("/dashboard");
+  if (projectId) revalidatePath(`/dashboard/projects/${projectId}`);
+  redirect(`/dashboard/tasks/${newTaskId}`);
 }
 
 export async function updateTaskStatus(

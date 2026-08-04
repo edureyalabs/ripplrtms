@@ -10,6 +10,8 @@ import { AddMemberForm, RemoveMemberButton } from "@/components/projects/member-
 import { Stepper } from "@/components/ui/stepper";
 import { SubmitPhasesForm } from "@/components/phases/submit-phases-form";
 import { PhaseDecision } from "@/components/phases/phase-decision";
+import { PhaseList } from "@/components/phases/phase-list";
+import { AddPhaseForm } from "@/components/phases/add-phase-form";
 import { Tabs } from "@/components/ui/tabs";
 import { Timeline } from "@/components/ui/timeline";
 import { UpdateForm } from "@/components/collaboration/update-form";
@@ -197,10 +199,16 @@ export default async function ProjectDetailPage({
           <CardHeader title="Phases" description="Independent of sub-task status." />
           <CardBody>
             {!phases || phases.length === 0 ? (
-              <p className="text-sm text-zinc-500 dark:text-zinc-400">No phases defined.</p>
+              <p className="text-sm text-zinc-500 dark:text-zinc-400">No phases yet.</p>
             ) : (
               <>
                 <Stepper phases={phases} />
+                <PhaseList
+                  parentType="project"
+                  parentId={project.id}
+                  phases={phases}
+                  canManage={isCreator && project.status !== "closed"}
+                />
                 {isMember &&
                   project.status !== "closed" && (
                     <SubmitPhasesForm
@@ -225,6 +233,11 @@ export default async function ProjectDetailPage({
                   </div>
                 )}
               </>
+            )}
+            {isCreator && project.status !== "closed" && (
+              <div className="mt-4 border-t border-surface-border pt-3 dark:border-surface-border-dark">
+                <AddPhaseForm parentType="project" parentId={project.id} />
+              </div>
             )}
           </CardBody>
         </Card>
