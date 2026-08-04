@@ -45,5 +45,5 @@ export async function signup(
     return { error: error.message };
   }
 
-  redirect("/login?message=check-email-to-confirm");
+  redirect("/?message=check-email-to-confirm");
 }

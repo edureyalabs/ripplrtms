@@ -96,7 +96,7 @@ export default function SignupPage() {
           <p className="mt-8 text-sm text-zinc-500 dark:text-zinc-400">
             Already have an account?{" "}
             <Link
-              href="/login"
+              href="/"
               className="font-medium text-[#0b2340] hover:underline dark:text-teal-400"
             >
               Sign in
