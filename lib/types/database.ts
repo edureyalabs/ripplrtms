@@ -50,7 +50,7 @@ export type Database = {
           full_name: string
           id: string
           is_active: boolean
-          role: Database["public"]["Enums"]["user_role"]
+          role: Database["public"]["Enums"]["user_role"] | null
           updated_at: string
         }
         Insert: {
@@ -61,7 +61,7 @@ export type Database = {
           full_name?: string
           id: string
           is_active?: boolean
-          role?: Database["public"]["Enums"]["user_role"]
+          role?: Database["public"]["Enums"]["user_role"] | null
           updated_at?: string
         }
         Update: {
@@ -72,7 +72,7 @@ export type Database = {
           full_name?: string
           id?: string
           is_active?: boolean
-          role?: Database["public"]["Enums"]["user_role"]
+          role?: Database["public"]["Enums"]["user_role"] | null
           updated_at?: string
         }
         Relationships: [

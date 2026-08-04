@@ -2,19 +2,17 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { Avatar } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { ROLE_LABELS } from "@/lib/roles";
-import { SetCeoButton, PromoteAdminButton, DemoteAdminForm } from "@/components/employees/role-actions";
+import { roleLabel } from "@/lib/roles";
 
 export default async function EmployeesPage() {
   const supabase = await createClient();
+  const { data: employees } = await supabase
+    .from("profiles")
+    .select("id, full_name, email, role, avatar_path, is_active, departments(name)")
+    .order("full_name");
 
-  const [{ data: employees }, { data: departments }] = await Promise.all([
-    supabase
-      .from("profiles")
-      .select("id, full_name, email, role, avatar_path, is_active, departments(name)")
-      .order("full_name"),
-    supabase.from("departments").select("id, name").eq("is_active", true).order("name"),
-  ]);
+  const ceo = employees?.find((emp) => emp.role === "ceo");
+  const rest = employees?.filter((emp) => emp.role !== "ceo") ?? [];
 
   return (
     <div>
@@ -52,7 +50,41 @@ export default async function EmployeesPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
-              {employees.map((emp) => (
+              {ceo && (
+                <tr className="bg-brand-900/5 dark:bg-teal-400/5">
+                  <td className="px-5 py-3">
+                    <div className="flex items-center gap-3">
+                      <Avatar name={ceo.full_name || ceo.email} avatarPath={ceo.avatar_path} size="sm" />
+                      <div>
+                        <p className="font-medium text-zinc-900 dark:text-zinc-100">
+                          {ceo.full_name || "—"}
+                        </p>
+                        <p className="text-xs text-zinc-500 dark:text-zinc-400">{ceo.email}</p>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="px-5 py-3">
+                    <Badge tone="brand">CEO</Badge>
+                  </td>
+                  <td className="px-5 py-3 text-zinc-500 dark:text-zinc-400">
+                    {ceo.departments?.name ?? "—"}
+                  </td>
+                  <td className="px-5 py-3">
+                    <Badge tone={ceo.is_active ? "success" : "neutral"}>
+                      {ceo.is_active ? "Active" : "Inactive"}
+                    </Badge>
+                  </td>
+                  <td className="px-5 py-3 text-right">
+                    <Link
+                      href={`/dashboard/admin/employees/${ceo.id}`}
+                      className="text-sm font-medium text-brand-900 hover:underline dark:text-teal-400"
+                    >
+                      Manage
+                    </Link>
+                  </td>
+                </tr>
+              )}
+              {rest.map((emp) => (
                 <tr key={emp.id}>
                   <td className="px-5 py-3">
                     <div className="flex items-center gap-3">
@@ -66,9 +98,7 @@ export default async function EmployeesPage() {
                     </div>
                   </td>
                   <td className="px-5 py-3">
-                    <Badge tone={emp.role === "ceo" ? "brand" : "neutral"}>
-                      {ROLE_LABELS[emp.role]}
-                    </Badge>
+                    <Badge tone={emp.role ? "neutral" : "warning"}>{roleLabel(emp.role)}</Badge>
                   </td>
                   <td className="px-5 py-3 text-zinc-500 dark:text-zinc-400">
                     {emp.departments?.name ?? "—"}
@@ -78,29 +108,13 @@ export default async function EmployeesPage() {
                       {emp.is_active ? "Active" : "Inactive"}
                     </Badge>
                   </td>
-                  <td className="px-5 py-3">
-                    <div className="flex flex-wrap items-center justify-end gap-3">
-                      {(emp.role === "dept_head" || emp.role === "team_member") && (
-                        <>
-                          <Link
-                            href={`/dashboard/admin/employees/${emp.id}`}
-                            className="text-sm font-medium text-brand-900 hover:underline dark:text-teal-400"
-                          >
-                            Edit
-                          </Link>
-                          <PromoteAdminButton userId={emp.id} />
-                          <SetCeoButton userId={emp.id} />
-                        </>
-                      )}
-                      {emp.role === "admin" && (
-                        <DemoteAdminForm userId={emp.id} departments={departments ?? []} />
-                      )}
-                      {emp.role === "ceo" && (
-                        <span className="text-xs text-zinc-400 dark:text-zinc-600">
-                          Set another CEO to replace
-                        </span>
-                      )}
-                    </div>
+                  <td className="px-5 py-3 text-right">
+                    <Link
+                      href={`/dashboard/admin/employees/${emp.id}`}
+                      className="text-sm font-medium text-brand-900 hover:underline dark:text-teal-400"
+                    >
+                      {emp.role ? "Manage" : "Assign role"}
+                    </Link>
                   </td>
                 </tr>
               ))}

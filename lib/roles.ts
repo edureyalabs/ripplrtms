@@ -6,3 +6,7 @@ export const ROLE_LABELS: Record<Enums<"user_role">, string> = {
   dept_head: "Dept Head",
   team_member: "Team Member",
 };
+
+export function roleLabel(role: Enums<"user_role"> | null) {
+  return role ? ROLE_LABELS[role] : "Pending Setup";
+}

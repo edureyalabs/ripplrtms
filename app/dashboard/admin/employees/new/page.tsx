@@ -1,14 +1,6 @@
-import { createClient } from "@/lib/supabase/server";
-import { EmployeeForm } from "@/components/employees/employee-form";
+import { CreateEmployeeForm } from "@/components/employees/create-employee-form";
 
-export default async function NewEmployeePage() {
-  const supabase = await createClient();
-  const { data: departments } = await supabase
-    .from("departments")
-    .select("id, name")
-    .eq("is_active", true)
-    .order("name");
-
+export default function NewEmployeePage() {
   return (
     <div>
       <p className="text-xs font-semibold uppercase tracking-[0.2em] text-teal-600 dark:text-teal-400">
@@ -18,7 +10,7 @@ export default async function NewEmployeePage() {
         New Employee
       </h1>
 
-      <EmployeeForm departments={departments ?? []} />
+      <CreateEmployeeForm />
     </div>
   );
 }
