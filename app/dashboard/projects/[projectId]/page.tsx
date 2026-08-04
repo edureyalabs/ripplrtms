@@ -10,6 +10,11 @@ import { AddMemberForm, RemoveMemberButton } from "@/components/projects/member-
 import { Stepper } from "@/components/ui/stepper";
 import { SubmitPhasesForm } from "@/components/phases/submit-phases-form";
 import { PhaseDecision } from "@/components/phases/phase-decision";
+import { Tabs } from "@/components/ui/tabs";
+import { Timeline } from "@/components/ui/timeline";
+import { UpdateForm } from "@/components/collaboration/update-form";
+import { ChatPanel } from "@/components/collaboration/chat-panel";
+import { getProjectTimeline } from "@/lib/queries/timeline";
 
 export default async function ProjectDetailPage({
   params,
@@ -24,31 +29,46 @@ export default async function ProjectDetailPage({
   } = await supabase.auth.getUser();
   if (!user) redirect("/");
 
-  const [{ data: project }, { data: members }, { data: me }, { data: tasks }, { data: phases }] =
-    await Promise.all([
-      supabase
-        .from("projects")
-        .select(
-          "id, name, description, status, start_date, deadline, lead_id, created_by, lead:profiles!projects_lead_id_fkey(full_name, email, avatar_path)"
-        )
-        .eq("id", projectId)
-        .single(),
-      supabase
-        .from("project_members")
-        .select("user_id, profiles!project_members_user_id_fkey(full_name, email, avatar_path, role)")
-        .eq("project_id", projectId),
-      supabase.from("profiles").select("id, role").eq("id", user.id).single(),
-      supabase
-        .from("tasks")
-        .select("id, name, status, end_date")
-        .eq("project_id", projectId)
-        .order("end_date"),
-      supabase
-        .from("project_phases")
-        .select("id, name, status")
-        .eq("project_id", projectId)
-        .order("position"),
-    ]);
+  const [
+    { data: project },
+    { data: members },
+    { data: me },
+    { data: tasks },
+    { data: phases },
+    { data: messages },
+    timeline,
+  ] = await Promise.all([
+    supabase
+      .from("projects")
+      .select(
+        "id, name, description, status, start_date, deadline, lead_id, created_by, lead:profiles!projects_lead_id_fkey(full_name, email, avatar_path)"
+      )
+      .eq("id", projectId)
+      .single(),
+    supabase
+      .from("project_members")
+      .select("user_id, profiles!project_members_user_id_fkey(full_name, email, avatar_path, role)")
+      .eq("project_id", projectId),
+    supabase.from("profiles").select("id, role").eq("id", user.id).single(),
+    supabase
+      .from("tasks")
+      .select("id, name, status, end_date")
+      .eq("project_id", projectId)
+      .order("end_date"),
+    supabase
+      .from("project_phases")
+      .select("id, name, status")
+      .eq("project_id", projectId)
+      .order("position"),
+    supabase
+      .from("project_messages")
+      .select(
+        "id, body, created_at, sender:profiles!project_messages_sender_id_fkey(full_name, email, avatar_path)"
+      )
+      .eq("project_id", projectId)
+      .order("created_at"),
+    getProjectTimeline(supabase, projectId),
+  ]);
 
   if (!project) {
     notFound();
@@ -67,6 +87,14 @@ export default async function ProjectDetailPage({
     : { data: [] as { id: string; full_name: string; email: string }[] };
 
   const availableCandidates = (candidates ?? []).filter((c) => !memberIds.has(c.id));
+
+  const chatMessages = (messages ?? []).map((m) => ({
+    id: m.id,
+    body: m.body,
+    created_at: m.created_at,
+    senderName: m.sender ? m.sender.full_name || m.sender.email : "Someone",
+    senderAvatarPath: m.sender?.avatar_path ?? null,
+  }));
 
   return (
     <div>
@@ -240,6 +268,38 @@ export default async function ProjectDetailPage({
           </CardBody>
         </Card>
       </div>
+
+      <Card className="mt-6">
+        <CardHeader
+          title="Activity"
+          description={project.status === "closed" ? "Locked — this project is closed." : undefined}
+        />
+        <CardBody>
+          <Tabs
+            tabs={[
+              {
+                key: "timeline",
+                label: "Timeline",
+                content: (
+                  <div className="flex flex-col gap-4">
+                    {isMember && project.status !== "closed" && (
+                      <UpdateForm parentType="project" parentId={project.id} />
+                    )}
+                    <Timeline entries={timeline} />
+                  </div>
+                ),
+              },
+              {
+                key: "chat",
+                label: "Chat",
+                content: (
+                  <ChatPanel parentType="project" parentId={project.id} messages={chatMessages} />
+                ),
+              },
+            ]}
+          />
+        </CardBody>
+      </Card>
     </div>
   );
 }
