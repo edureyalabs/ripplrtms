@@ -1,32 +1,46 @@
 "use client";
 
-import { useActionState, useEffect, useRef } from "react";
-import { postTaskMessage, type MessageState } from "@/lib/actions/messages";
+import { useActionState, useEffect, useRef, useState } from "react";
+import {
+  postTaskMessage,
+  getOlderTaskMessages,
+  type MessageState,
+  type ChatMessage,
+} from "@/lib/actions/messages";
 import { TextInput } from "@/components/ui/form-field";
 import { SubmitButton } from "@/components/submit-button";
 import { Avatar } from "@/components/ui/avatar";
 
-type Message = {
-  id: string;
-  body: string;
-  created_at: string;
-  senderName: string;
-  senderAvatarPath: string | null;
-};
+const PAGE_SIZE = 20;
 
 export function ChatPanel({
   taskId,
-  messages,
+  initialMessages,
 }: {
   taskId: string;
-  messages: Message[];
+  initialMessages: ChatMessage[];
 }) {
   const [state, formAction] = useActionState<MessageState, FormData>(postTaskMessage, undefined);
+  const [messages, setMessages] = useState(initialMessages);
+  const [hasMore, setHasMore] = useState(initialMessages.length >= PAGE_SIZE);
+  const [loadingMore, setLoadingMore] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const formRef = useRef<HTMLFormElement>(null);
+  const shouldStickToBottom = useRef(true);
+
+  // Re-seed from the server's latest page (e.g. after any action on this page
+  // triggers a revalidation) without a useEffect: adjust during render.
+  const [seenInitialMessages, setSeenInitialMessages] = useState(initialMessages);
+  if (initialMessages !== seenInitialMessages) {
+    setSeenInitialMessages(initialMessages);
+    setMessages(initialMessages);
+    setHasMore(initialMessages.length >= PAGE_SIZE);
+  }
 
   useEffect(() => {
-    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight });
+    if (shouldStickToBottom.current) {
+      scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight });
+    }
   }, [messages.length]);
 
   useEffect(() => {
@@ -35,9 +49,41 @@ export function ChatPanel({
     }
   }, [state]);
 
+  async function loadOlder() {
+    const el = scrollRef.current;
+    if (!el || loadingMore || !hasMore || messages.length === 0) return;
+
+    setLoadingMore(true);
+    shouldStickToBottom.current = false;
+    const prevScrollHeight = el.scrollHeight;
+
+    try {
+      const older = await getOlderTaskMessages(taskId, messages[0].created_at);
+      if (older.length < PAGE_SIZE) setHasMore(false);
+      if (older.length > 0) {
+        setMessages((prev) => [...older, ...prev]);
+        requestAnimationFrame(() => {
+          if (el) el.scrollTop = el.scrollHeight - prevScrollHeight;
+        });
+      }
+    } finally {
+      setLoadingMore(false);
+    }
+  }
+
+  function onScroll() {
+    const el = scrollRef.current;
+    if (!el) return;
+    shouldStickToBottom.current = el.scrollHeight - el.scrollTop - el.clientHeight < 40;
+    if (el.scrollTop < 60) loadOlder();
+  }
+
   return (
     <div className="flex h-full flex-col">
-      <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-4">
+      <div ref={scrollRef} onScroll={onScroll} className="flex-1 overflow-y-auto px-4 py-4">
+        {loadingMore && (
+          <p className="pb-2 text-center text-[11px] text-zinc-400 dark:text-zinc-600">Loading...</p>
+        )}
         {messages.length === 0 ? (
           <div className="flex h-full flex-col items-center justify-center gap-2 text-center">
             <ChatIcon />
@@ -76,6 +122,9 @@ export function ChatPanel({
       <form
         ref={formRef}
         action={formAction}
+        onSubmit={() => {
+          shouldStickToBottom.current = true;
+        }}
         className="flex items-center gap-2 border-t border-surface-border p-3 dark:border-surface-border-dark"
       >
         <input type="hidden" name="task_id" value={taskId} />

@@ -159,3 +159,49 @@ export async function getProjectTasks(
 
   return (tasks ?? []).map(mapTaskRow);
 }
+
+export type TaskFilters = {
+  departmentId?: string;
+  projectId?: string;
+  employeeId?: string;
+  status?: string;
+};
+
+/** Company-wide task browser for admin/ceo, filterable by department, project, assignee, and status. */
+export async function getAllTasks(
+  supabase: SupabaseClient<Database>,
+  filters: TaskFilters
+): Promise<TaskRow[]> {
+  let taskIdFilter: string[] | null = null;
+
+  if (filters.departmentId) {
+    const { data: members } = await supabase
+      .from("profiles")
+      .select("id")
+      .eq("department_id", filters.departmentId);
+    const memberIds = (members ?? []).map((m) => m.id);
+    const { data: taskMembers } = memberIds.length
+      ? await supabase.from("task_members").select("task_id").eq("role", "assignee").in("user_id", memberIds)
+      : { data: [] };
+    taskIdFilter = [...new Set((taskMembers ?? []).map((tm) => tm.task_id))];
+  }
+
+  if (filters.employeeId) {
+    const { data: taskMembers } = await supabase
+      .from("task_members")
+      .select("task_id")
+      .eq("user_id", filters.employeeId);
+    const ids = [...new Set((taskMembers ?? []).map((tm) => tm.task_id))];
+    taskIdFilter = taskIdFilter ? taskIdFilter.filter((id) => ids.includes(id)) : ids;
+  }
+
+  if (taskIdFilter && taskIdFilter.length === 0) return [];
+
+  let query = supabase.from("tasks").select(TASK_ROW_SELECT).order("end_date");
+  if (filters.projectId) query = query.eq("project_id", filters.projectId);
+  if (filters.status) query = query.eq("status", filters.status as never);
+  if (taskIdFilter) query = query.in("id", taskIdFilter);
+
+  const { data: tasks } = await query;
+  return (tasks ?? []).map(mapTaskRow);
+}

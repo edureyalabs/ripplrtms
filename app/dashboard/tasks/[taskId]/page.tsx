@@ -9,11 +9,13 @@ import { TASK_STATUS_LABEL, TASK_STATUS_TONE } from "@/lib/badge-tones";
 import { classifyUrgency, URGENCY_BADGE_TONE, URGENCY_LABEL } from "@/lib/urgency";
 import { TaskStatusButton, TaskRejectControl } from "@/components/tasks/task-status-controls";
 import { EditTaskDialog } from "@/components/tasks/edit-task-dialog";
+import { DeleteTaskButton } from "@/components/tasks/delete-task-button";
 import { TaskUpdateModal } from "@/components/tasks/task-update-modal";
 import { TaskReviewModal } from "@/components/tasks/task-review-modal";
 import { PhaseDecision } from "@/components/phases/phase-decision";
 import { ChatPanel } from "@/components/collaboration/chat-panel";
 import { getTaskTimeline } from "@/lib/queries/timeline";
+import { getLatestTaskMessages } from "@/lib/actions/messages";
 
 export default async function TaskDetailPage({
   params,
@@ -28,7 +30,7 @@ export default async function TaskDetailPage({
   } = await supabase.auth.getUser();
   if (!user) redirect("/");
 
-  const [{ data: task }, { data: members }, { data: phases }, { data: messages }, timeline] =
+  const [{ data: task }, { data: members }, { data: phases }, chatMessages, timeline] =
     await Promise.all([
       supabase
         .from("tasks")
@@ -42,11 +44,7 @@ export default async function TaskDetailPage({
         .select("user_id, role, profiles!task_members_user_id_fkey(full_name, email, avatar_path)")
         .eq("task_id", taskId),
       supabase.from("task_phases").select("id, name, status").eq("task_id", taskId).order("position"),
-      supabase
-        .from("task_messages")
-        .select("id, body, created_at, sender:profiles!task_messages_sender_id_fkey(full_name, email, avatar_path)")
-        .eq("task_id", taskId)
-        .order("created_at"),
+      getLatestTaskMessages(taskId),
       getTaskTimeline(supabase, taskId),
     ]);
 
@@ -71,14 +69,6 @@ export default async function TaskDetailPage({
     (isAssignee || isCreator || isPrivileged) &&
     (task.status === "open" || task.status === "in_progress") &&
     !hasPhaseAwaitingReview;
-
-  const chatMessages = (messages ?? []).map((m) => ({
-    id: m.id,
-    body: m.body,
-    created_at: m.created_at,
-    senderName: m.sender ? m.sender.full_name || m.sender.email : "Someone",
-    senderAvatarPath: m.sender?.avatar_path ?? null,
-  }));
 
   const createdEntry: TimelineEntry = {
     id: "task-created",
@@ -122,15 +112,18 @@ export default async function TaskDetailPage({
             </p>
           </div>
 
-          {canEdit && (
-            <EditTaskDialog
-              taskId={task.id}
-              name={task.name}
-              description={task.description}
-              startDate={task.start_date}
-              endDate={task.end_date}
-            />
-          )}
+          <div className="flex shrink-0 items-center gap-2">
+            {canEdit && (
+              <EditTaskDialog
+                taskId={task.id}
+                name={task.name}
+                description={task.description}
+                startDate={task.start_date}
+                endDate={task.end_date}
+              />
+            )}
+            {isPrivileged && <DeleteTaskButton taskId={task.id} />}
+          </div>
         </div>
 
         {(members ?? []).length > 0 && (
@@ -230,7 +223,7 @@ export default async function TaskDetailPage({
             description={`${chatMessages.length} message${chatMessages.length === 1 ? "" : "s"}`}
           />
           <div className="min-h-0 flex-1">
-            <ChatPanel taskId={task.id} messages={chatMessages} />
+            <ChatPanel taskId={task.id} initialMessages={chatMessages} />
           </div>
         </Card>
       </div>
