@@ -3,6 +3,7 @@
 import { useActionState } from "react";
 import { createTask, type TaskState } from "@/lib/actions/tasks";
 import { FormField, TextInput, Textarea, Checkbox } from "@/components/ui/form-field";
+import { PhaseListInput } from "@/components/phases/phase-list-input";
 import { SubmitButton } from "@/components/submit-button";
 
 type Candidate = { id: string; full_name: string; email: string };
@@ -40,13 +41,7 @@ export function TaskForm({
         <Textarea id="description" name="description" rows={3} />
       </FormField>
 
-      <FormField
-        label="Phases"
-        htmlFor="phases"
-        hint="Optional. Comma-separated checkpoints, e.g. Design, Build, Test."
-      >
-        <TextInput id="phases" name="phases" placeholder="Design, Build, Test" />
-      </FormField>
+      <PhaseListInput hint="Optional. These become the checkpoints the assignee submits one by one." />
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <FormField label="Start date" htmlFor="start_date" hint="Today or later.">

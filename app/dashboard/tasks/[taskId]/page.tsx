@@ -4,17 +4,13 @@ import { createClient } from "@/lib/supabase/server";
 import { Card, CardHeader, CardBody } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar } from "@/components/ui/avatar";
-import { Timeline } from "@/components/ui/timeline";
+import { Timeline, type TimelineEntry } from "@/components/ui/timeline";
 import { TASK_STATUS_LABEL, TASK_STATUS_TONE } from "@/lib/badge-tones";
 import { classifyUrgency, URGENCY_BADGE_TONE, URGENCY_LABEL } from "@/lib/urgency";
 import { TaskStatusButton, TaskRejectControl } from "@/components/tasks/task-status-controls";
 import { EditTaskDialog } from "@/components/tasks/edit-task-dialog";
-import { Stepper } from "@/components/ui/stepper";
-import { SubmitPhasesForm } from "@/components/phases/submit-phases-form";
+import { TaskUpdateModal } from "@/components/tasks/task-update-modal";
 import { PhaseDecision } from "@/components/phases/phase-decision";
-import { PhaseList } from "@/components/phases/phase-list";
-import { AddPhaseForm } from "@/components/phases/add-phase-form";
-import { UpdateForm } from "@/components/collaboration/update-form";
 import { ChatPanel } from "@/components/collaboration/chat-panel";
 import { getTaskTimeline } from "@/lib/queries/timeline";
 
@@ -36,7 +32,7 @@ export default async function TaskDetailPage({
       supabase
         .from("tasks")
         .select(
-          "id, name, description, status, start_date, end_date, created_by, project_id, projects(id, name)"
+          "id, name, description, status, start_date, end_date, created_at, created_by, project_id, projects(id, name), creator:profiles!tasks_created_by_fkey(full_name, email)"
         )
         .eq("id", taskId)
         .single(),
@@ -65,6 +61,12 @@ export default async function TaskDetailPage({
   const isLocked = task.status === "completed" || task.status === "terminated";
   const urgency = classifyUrgency(task.end_date, task.status);
 
+  const pendingPhases = (phases ?? []).filter((p) => p.status === "pending");
+  const submittedPhases = (phases ?? []).filter((p) => p.status === "submitted");
+  const hasPhaseAwaitingReview = submittedPhases.length > 0;
+  const canPostUpdate =
+    isAssignee && (task.status === "open" || task.status === "in_progress") && !hasPhaseAwaitingReview;
+
   const chatMessages = (messages ?? []).map((m) => ({
     id: m.id,
     body: m.body,
@@ -74,135 +76,94 @@ export default async function TaskDetailPage({
   }));
 
   const assignees = (members ?? []).filter((m) => m.role === "assignee");
-  const collaborators = (members ?? []).filter((m) => m.role === "collaborator");
+
+  const createdEntry: TimelineEntry = {
+    id: "task-created",
+    kind: "task_created",
+    actorName: task.creator ? task.creator.full_name || task.creator.email : "Someone",
+    createdAt: task.created_at,
+  };
+  const entries = [createdEntry, ...timeline];
 
   return (
     <div>
-      <Link
-        href={task.projects ? `/dashboard/projects/${task.projects.id}` : "/dashboard"}
-        className="inline-flex items-center gap-1 text-xs font-medium text-zinc-500 hover:text-accent-600 dark:text-zinc-400 dark:hover:text-accent-500"
-      >
-        <BackIcon />
-        {task.projects ? task.projects.name : "My Tasks"}
-      </Link>
+      {/* Header strip */}
+      <Card className="p-5">
+        <Link
+          href={task.projects ? `/dashboard/projects/${task.projects.id}` : "/dashboard"}
+          className="inline-flex items-center gap-1 text-xs font-medium text-zinc-500 hover:text-accent-600 dark:text-zinc-400 dark:hover:text-accent-500"
+        >
+          <BackIcon />
+          {task.projects ? task.projects.name : "My Tasks"}
+        </Link>
 
-      {/* Header */}
-      <div className="mt-3 flex flex-wrap items-start justify-between gap-4">
-        <div className="min-w-0">
-          <div className="flex flex-wrap items-center gap-2">
-            {task.projects ? (
-              <Badge tone="accent">{task.projects.name}</Badge>
-            ) : (
-              <Badge tone="neutral">Standalone task</Badge>
-            )}
-            <Badge tone={TASK_STATUS_TONE[task.status]}>{TASK_STATUS_LABEL[task.status]}</Badge>
-            {urgency !== "done" && urgency !== "later" && (
-              <Badge tone={URGENCY_BADGE_TONE[urgency]}>{URGENCY_LABEL[urgency]}</Badge>
-            )}
-          </div>
-          <h1 className="mt-2 text-2xl font-semibold tracking-tight text-zinc-950 dark:text-zinc-50">
-            {task.name}
-          </h1>
-          <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
-            {task.start_date} → {task.end_date}
-          </p>
-          {task.description && (
-            <p className="mt-3 max-w-2xl text-sm text-zinc-600 dark:text-zinc-400">
-              {task.description}
-            </p>
-          )}
-        </div>
-
-        <div className="flex shrink-0 items-center gap-2">
-          {assignees.length > 0 && (
-            <div className="flex -space-x-2">
-              {assignees.map((m) =>
-                m.profiles ? (
-                  <div key={m.user_id} className="ring-2 ring-background rounded-full">
-                    <Avatar
-                      name={m.profiles.full_name || m.profiles.email}
-                      avatarPath={m.profiles.avatar_path}
-                      size="md"
-                    />
-                  </div>
-                ) : null
+        <div className="mt-2 flex flex-wrap items-start justify-between gap-4">
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <h1 className="text-xl font-semibold tracking-tight text-zinc-950 dark:text-zinc-50">
+                {task.name}
+              </h1>
+              {task.projects && <Badge tone="accent">{task.projects.name}</Badge>}
+              <Badge tone={TASK_STATUS_TONE[task.status]}>{TASK_STATUS_LABEL[task.status]}</Badge>
+              {urgency !== "done" && urgency !== "later" && (
+                <Badge tone={URGENCY_BADGE_TONE[urgency]}>{URGENCY_LABEL[urgency]}</Badge>
               )}
             </div>
-          )}
-          {canEdit && (
-            <EditTaskDialog
-              taskId={task.id}
-              name={task.name}
-              description={task.description}
-              startDate={task.start_date}
-              endDate={task.end_date}
-            />
-          )}
-        </div>
-      </div>
-
-      {/* Phase progress strip */}
-      {phases && phases.length > 0 && (
-        <Card className="mt-5 p-4">
-          <Stepper phases={phases} />
-          <div className="mt-3 flex flex-wrap items-center gap-2">
-            <PhaseList
-              parentType="task"
-              parentId={task.id}
-              phases={phases}
-              canManage={isCreator && !isLocked}
-            />
+            {task.description && (
+              <p className="mt-1.5 max-w-2xl text-sm text-zinc-600 dark:text-zinc-400">
+                {task.description}
+              </p>
+            )}
+            <p className="mt-1.5 text-xs text-zinc-400 dark:text-zinc-600">
+              {task.start_date} → {task.end_date}
+            </p>
           </div>
-          <div className="mt-2 flex flex-wrap items-center gap-3">
-            {isAssignee && !isLocked && (
-              <SubmitPhasesForm
-                parentType="task"
-                parentId={task.id}
-                pendingPhases={phases.filter((p) => p.status === "pending")}
+
+          <div className="flex shrink-0 items-center gap-3">
+            {assignees.length > 0 && (
+              <div className="flex -space-x-2">
+                {assignees.map((m) =>
+                  m.profiles ? (
+                    <div key={m.user_id} className="ring-2 ring-background rounded-full">
+                      <Avatar
+                        name={m.profiles.full_name || m.profiles.email}
+                        avatarPath={m.profiles.avatar_path}
+                        size="md"
+                      />
+                    </div>
+                  ) : null
+                )}
+              </div>
+            )}
+            {canEdit && (
+              <EditTaskDialog
+                taskId={task.id}
+                name={task.name}
+                description={task.description}
+                startDate={task.start_date}
+                endDate={task.end_date}
               />
             )}
-            {isCreator &&
-              phases
-                .filter((p) => p.status === "submitted")
-                .map((phase) => (
-                  <PhaseDecision
-                    key={phase.id}
-                    parentType="task"
-                    parentId={task.id}
-                    phaseId={phase.id}
-                    phaseName={phase.name}
-                  />
-                ))}
           </div>
-          {isCreator && !isLocked && (
-            <div className="mt-3 border-t border-surface-border pt-3 dark:border-surface-border-dark">
-              <AddPhaseForm parentType="task" parentId={task.id} />
-            </div>
-          )}
-        </Card>
-      )}
-      {(!phases || phases.length === 0) && isCreator && !isLocked && (
-        <Card className="mt-5 p-4">
-          <AddPhaseForm parentType="task" parentId={task.id} />
-        </Card>
-      )}
+        </div>
+      </Card>
 
-      {/* Status actions */}
-      <div className="mt-5 flex flex-wrap items-center gap-3">
-        {task.status === "open" && isAssignee && (
-          <TaskStatusButton
+      {/* Action toolbar */}
+      <div className="mt-4 flex flex-wrap items-center gap-3">
+        {canPostUpdate && (
+          <TaskUpdateModal
             taskId={task.id}
-            targetStatus="in_progress"
-            label="Start Task"
-            pendingLabel="Starting..."
+            pendingPhases={pendingPhases}
+            willStartTask={task.status === "open"}
           />
         )}
-        {task.status === "in_progress" && isAssignee && (
+        {task.status === "in_progress" && isAssignee && !hasPhaseAwaitingReview && (
           <TaskStatusButton
             taskId={task.id}
             targetStatus="submitted"
             label="Submit for Completion"
             pendingLabel="Submitting..."
+            variant="outline"
           />
         )}
         {task.status === "submitted" && isCreator && (
@@ -210,8 +171,8 @@ export default async function TaskDetailPage({
             <TaskStatusButton
               taskId={task.id}
               targetStatus="completed"
-              label="Accept"
-              pendingLabel="Accepting..."
+              label="Approve & Close"
+              pendingLabel="Approving..."
             />
             <TaskRejectControl taskId={task.id} />
           </>
@@ -225,33 +186,43 @@ export default async function TaskDetailPage({
             variant="danger"
           />
         )}
-
-        <div className="ml-auto flex items-center gap-2">
-          {[...assignees, ...collaborators].length > 0 && (
-            <p className="text-xs text-zinc-400 dark:text-zinc-600">
-              {assignees.length} assignee{assignees.length === 1 ? "" : "s"}
-              {collaborators.length > 0 &&
-                ` · ${collaborators.length} collaborator${collaborators.length === 1 ? "" : "s"}`}
-            </p>
-          )}
-        </div>
+        {hasPhaseAwaitingReview && !isCreator && (
+          <p className="text-xs text-amber-600 dark:text-amber-400">
+            {submittedPhases.length === 1 ? "A phase is" : `${submittedPhases.length} phases are`} awaiting
+            review — updates are paused until then.
+          </p>
+        )}
       </div>
 
-      {/* Main split: 70% activity log / 30% chat */}
+      {isCreator &&
+        submittedPhases.map((phase) => (
+          <div key={phase.id} className="mt-3">
+            <PhaseDecision
+              parentType="task"
+              parentId={task.id}
+              phaseId={phase.id}
+              phaseName={phase.name}
+            />
+          </div>
+        ))}
+
+      {/* Main split: activity log (left, ~70%) / chat (right, ~30%) */}
       <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-10">
         <Card className="flex flex-col lg:col-span-7">
           <CardHeader
             title="Activity log"
-            description={isLocked ? "Locked — this task is finished." : "Status changes, phase decisions, and updates"}
+            description={isLocked ? "Locked — this task is finished." : undefined}
           />
-          <CardBody className="flex flex-col gap-4">
-            {isAssignee && !isLocked && <UpdateForm parentType="task" parentId={task.id} />}
-            <Timeline entries={timeline} />
+          <CardBody>
+            <Timeline entries={entries} />
           </CardBody>
         </Card>
 
         <Card className="flex h-[36rem] flex-col overflow-hidden lg:col-span-3 lg:h-auto">
-          <CardHeader title="Chat" description={`${chatMessages.length} message${chatMessages.length === 1 ? "" : "s"}`} />
+          <CardHeader
+            title="Chat"
+            description={`${chatMessages.length} message${chatMessages.length === 1 ? "" : "s"}`}
+          />
           <div className="min-h-0 flex-1">
             <ChatPanel parentType="task" parentId={task.id} messages={chatMessages} />
           </div>

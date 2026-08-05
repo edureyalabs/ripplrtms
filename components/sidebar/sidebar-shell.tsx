@@ -43,7 +43,7 @@ export function SidebarShell({
       </div>
 
       <aside
-        className={`${mobileOpen ? "flex" : "hidden"} fixed inset-0 top-[49px] z-20 w-full flex-col bg-brand-900 px-4 py-6 lg:sticky lg:top-0 lg:flex lg:h-screen lg:w-64 lg:shrink-0`}
+        className={`${mobileOpen ? "flex" : "hidden"} fixed inset-0 top-[49px] z-20 w-full flex-col bg-brand-900 px-4 py-6 lg:sticky lg:top-0 lg:flex lg:h-screen lg:w-56 lg:shrink-0`}
       >
         <Image
           src="/logo.jpg"
