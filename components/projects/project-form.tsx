@@ -3,6 +3,7 @@
 import { useActionState } from "react";
 import { createProject, type ProjectState } from "@/lib/actions/projects";
 import { FormField, Select, TextInput, Textarea, Checkbox } from "@/components/ui/form-field";
+import { PhaseListInput } from "@/components/phases/phase-list-input";
 import { SubmitButton } from "@/components/submit-button";
 
 type Employee = { id: string; full_name: string; email: string };
@@ -21,13 +22,7 @@ export function ProjectForm({ employees }: { employees: Employee[] }) {
         <Textarea id="description" name="description" rows={3} />
       </FormField>
 
-      <FormField
-        label="Phases"
-        htmlFor="phases"
-        hint="Optional. Comma-separated milestones, e.g. Kickoff, Build, Launch."
-      >
-        <TextInput id="phases" name="phases" placeholder="Kickoff, Build, Launch" />
-      </FormField>
+      <PhaseListInput hint="Optional. These become the milestones the team submits one by one." />
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <FormField label="Start date" htmlFor="start_date" hint="Today or later.">

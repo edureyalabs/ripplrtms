@@ -1,6 +1,12 @@
 export type TimelineEntry = {
   id: string;
-  kind: "status_change" | "phase_submitted" | "phase_accepted" | "phase_rejected" | "manual_update";
+  kind:
+    | "task_created"
+    | "status_change"
+    | "phase_submitted"
+    | "phase_accepted"
+    | "phase_rejected"
+    | "manual_update";
   actorName: string;
   fromStatus?: string | null;
   toStatus?: string | null;
@@ -13,6 +19,8 @@ export type TimelineEntry = {
 
 function describe(entry: TimelineEntry) {
   switch (entry.kind) {
+    case "task_created":
+      return `${entry.actorName} created this task`;
     case "status_change":
       return `${entry.actorName} moved status to ${entry.toStatus?.replace("_", " ")}`;
     case "phase_submitted":
@@ -27,6 +35,7 @@ function describe(entry: TimelineEntry) {
 }
 
 const DOT_TONE: Record<TimelineEntry["kind"], string> = {
+  task_created: "bg-zinc-500 dark:bg-zinc-400",
   status_change: "bg-accent-600 dark:bg-accent-500",
   phase_submitted: "bg-amber-500",
   phase_accepted: "bg-emerald-500",
@@ -37,6 +46,12 @@ const DOT_TONE: Record<TimelineEntry["kind"], string> = {
 function EntryIcon({ kind }: { kind: TimelineEntry["kind"] }) {
   const common = "h-3 w-3 text-white";
   switch (kind) {
+    case "task_created":
+      return (
+        <svg viewBox="0 0 20 20" fill="currentColor" className={common} aria-hidden="true">
+          <path d="M10 2a1 1 0 0 1 1 1v6h6a1 1 0 1 1 0 2h-6v6a1 1 0 1 1-2 0v-6H3a1 1 0 1 1 0-2h6V3a1 1 0 0 1 1-1Z" />
+        </svg>
+      );
     case "status_change":
       return (
         <svg viewBox="0 0 20 20" fill="currentColor" className={common} aria-hidden="true">

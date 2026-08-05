@@ -71,36 +71,35 @@ export default async function OverviewPage() {
           : "Task status across your department."}
       </p>
 
-      {pulse && (
-        <div className="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-4">
-          <StatTile label="Active Projects" value={pulse.activeProjects} />
-          <StatTile label="Overdue Tasks" value={pulse.overdueTasks} tone="danger" />
-          <StatTile label="Completed (Week)" value={pulse.completedThisWeek} tone="completed" />
-          <StatTile label="Completed (Month)" value={pulse.completedThisMonth} tone="completed" />
-        </div>
-      )}
-
-      <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
-        <StatTile label="Open" value={totals.open} />
-        <StatTile label="In Progress" value={totals.inProgress} tone="progress" />
-        <StatTile label="Submitted" value={totals.submitted} tone="submitted" />
-        <StatTile label="Completed" value={totals.completed} tone="completed" />
-        <StatTile label="Overdue" value={totals.overdue} tone="danger" />
+      <div className="mt-6 grid grid-cols-3 gap-2.5 sm:grid-cols-5 lg:grid-cols-9">
+        {pulse && (
+          <>
+            <StatTile label="Active Projects" value={pulse.activeProjects} size="sm" />
+            <StatTile label="Overdue" value={pulse.overdueTasks} tone="danger" size="sm" />
+            <StatTile label="Done (Wk)" value={pulse.completedThisWeek} tone="completed" size="sm" />
+            <StatTile label="Done (Mo)" value={pulse.completedThisMonth} tone="completed" size="sm" />
+          </>
+        )}
+        <StatTile label="Open" value={totals.open} size="sm" />
+        <StatTile label="In Progress" value={totals.inProgress} tone="progress" size="sm" />
+        <StatTile label="Submitted" value={totals.submitted} tone="submitted" size="sm" />
+        <StatTile label="Completed" value={totals.completed} tone="completed" size="sm" />
+        <StatTile label="Overdue" value={totals.overdue} tone="danger" size="sm" />
       </div>
 
-      <div className="mt-10 flex items-center justify-between">
-        <h2 className="text-sm font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+      <div className="mt-6 flex items-center justify-between">
+        <h2 className="text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
           Departments
         </h2>
       </div>
       {rollups.length === 0 ? (
-        <Card className="mt-4">
-          <p className="p-10 text-center text-sm text-zinc-500 dark:text-zinc-400">
+        <Card className="mt-3">
+          <p className="p-8 text-center text-sm text-zinc-500 dark:text-zinc-400">
             No department data yet.
           </p>
         </Card>
       ) : (
-        <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {rollups.map((rollup) => (
             <DepartmentRollupCard
               key={rollup.departmentId}
@@ -113,25 +112,25 @@ export default async function OverviewPage() {
 
       {isCommandCenter && (
         <>
-          <div className="mt-10 flex items-center justify-between">
-            <h2 className="text-sm font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+          <div className="mt-6 flex items-center justify-between">
+            <h2 className="text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
               Projects
             </h2>
             <Link
               href="/dashboard/projects"
-              className="text-sm font-medium text-accent-600 hover:underline dark:text-accent-500"
+              className="text-xs font-medium text-accent-600 hover:underline dark:text-accent-500"
             >
               View all
             </Link>
           </div>
           {projects.length === 0 ? (
-            <Card className="mt-4">
-              <p className="p-10 text-center text-sm text-zinc-500 dark:text-zinc-400">
+            <Card className="mt-3">
+              <p className="p-8 text-center text-sm text-zinc-500 dark:text-zinc-400">
                 No active projects.
               </p>
             </Card>
           ) : (
-            <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
               {projects.map((project) => (
                 <ProjectSummaryCard key={project.id} project={project} />
               ))}
