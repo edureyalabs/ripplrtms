@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { Card, CardHeader, CardBody } from "@/components/ui/card";
+import { Card, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar } from "@/components/ui/avatar";
 import { Timeline, type TimelineEntry } from "@/components/ui/timeline";
@@ -10,6 +10,7 @@ import { classifyUrgency, URGENCY_BADGE_TONE, URGENCY_LABEL } from "@/lib/urgenc
 import { TaskStatusButton, TaskRejectControl } from "@/components/tasks/task-status-controls";
 import { EditTaskDialog } from "@/components/tasks/edit-task-dialog";
 import { TaskUpdateModal } from "@/components/tasks/task-update-modal";
+import { TaskReviewModal } from "@/components/tasks/task-review-modal";
 import { PhaseDecision } from "@/components/phases/phase-decision";
 import { ChatPanel } from "@/components/collaboration/chat-panel";
 import { getTaskTimeline } from "@/lib/queries/timeline";
@@ -54,10 +55,12 @@ export default async function TaskDetailPage({
   }
 
   const isAssignee = (members ?? []).some((m) => m.user_id === user.id && m.role === "assignee");
+  const isCollaborator = (members ?? []).some((m) => m.user_id === user.id && m.role === "collaborator");
   const isCreator = task.created_by === user.id;
   const { data: me } = await supabase.from("profiles").select("role").eq("id", user.id).single();
   const isPrivileged = me?.role === "admin" || me?.role === "ceo";
   const canEdit = isCreator || isPrivileged;
+  const canReview = isCreator || isCollaborator || isPrivileged;
   const isLocked = task.status === "completed" || task.status === "terminated";
   const urgency = classifyUrgency(task.end_date, task.status);
 
@@ -65,7 +68,9 @@ export default async function TaskDetailPage({
   const submittedPhases = (phases ?? []).filter((p) => p.status === "submitted");
   const hasPhaseAwaitingReview = submittedPhases.length > 0;
   const canPostUpdate =
-    isAssignee && (task.status === "open" || task.status === "in_progress") && !hasPhaseAwaitingReview;
+    (isAssignee || isCreator || isPrivileged) &&
+    (task.status === "open" || task.status === "in_progress") &&
+    !hasPhaseAwaitingReview;
 
   const chatMessages = (messages ?? []).map((m) => ({
     id: m.id,
@@ -74,8 +79,6 @@ export default async function TaskDetailPage({
     senderName: m.sender ? m.sender.full_name || m.sender.email : "Someone",
     senderAvatarPath: m.sender?.avatar_path ?? null,
   }));
-
-  const assignees = (members ?? []).filter((m) => m.role === "assignee");
 
   const createdEntry: TimelineEntry = {
     id: "task-created",
@@ -86,9 +89,9 @@ export default async function TaskDetailPage({
   const entries = [createdEntry, ...timeline];
 
   return (
-    <div>
-      {/* Header strip */}
-      <Card className="p-5">
+    <div className="flex h-[calc(100vh-4rem)] min-h-0 flex-col">
+      {/* Header strip: identity + members, kept compact */}
+      <Card className="shrink-0 p-5">
         <Link
           href={task.projects ? `/dashboard/projects/${task.projects.id}` : "/dashboard"}
           className="inline-flex items-center gap-1 text-xs font-medium text-zinc-500 hover:text-accent-600 dark:text-zinc-400 dark:hover:text-accent-500"
@@ -119,45 +122,53 @@ export default async function TaskDetailPage({
             </p>
           </div>
 
-          <div className="flex shrink-0 items-center gap-3">
-            {assignees.length > 0 && (
-              <div className="flex -space-x-2">
-                {assignees.map((m) =>
-                  m.profiles ? (
-                    <div key={m.user_id} className="ring-2 ring-background rounded-full">
-                      <Avatar
-                        name={m.profiles.full_name || m.profiles.email}
-                        avatarPath={m.profiles.avatar_path}
-                        size="md"
-                      />
-                    </div>
-                  ) : null
-                )}
-              </div>
-            )}
-            {canEdit && (
-              <EditTaskDialog
-                taskId={task.id}
-                name={task.name}
-                description={task.description}
-                startDate={task.start_date}
-                endDate={task.end_date}
-              />
-            )}
-          </div>
+          {canEdit && (
+            <EditTaskDialog
+              taskId={task.id}
+              name={task.name}
+              description={task.description}
+              startDate={task.start_date}
+              endDate={task.end_date}
+            />
+          )}
         </div>
+
+        {(members ?? []).length > 0 && (
+          <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1.5 border-t border-surface-border pt-3 dark:border-surface-border-dark">
+            {(members ?? []).map((member) => {
+              const profile = member.profiles;
+              if (!profile) return null;
+              return (
+                <div key={member.user_id} className="flex items-center gap-1.5">
+                  <Avatar
+                    name={profile.full_name || profile.email}
+                    avatarPath={profile.avatar_path}
+                    size="sm"
+                  />
+                  <span className="text-xs font-medium text-zinc-700 dark:text-zinc-300">
+                    {profile.full_name || profile.email}
+                  </span>
+                  <span className="text-[10px] capitalize text-zinc-400 dark:text-zinc-600">
+                    {member.role}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </Card>
 
       {/* Action toolbar */}
-      <div className="mt-4 flex flex-wrap items-center gap-3">
+      <div className="mt-4 flex shrink-0 flex-wrap items-center gap-3">
         {canPostUpdate && (
           <TaskUpdateModal
             taskId={task.id}
-            pendingPhases={pendingPhases}
-            willStartTask={task.status === "open"}
+            pendingPhases={isAssignee ? pendingPhases : []}
+            willStartTask={task.status === "open" && isAssignee}
           />
         )}
-        {task.status === "in_progress" && isAssignee && !hasPhaseAwaitingReview && (
+        {canReview && !isLocked && <TaskReviewModal taskId={task.id} />}
+        {task.status === "in_progress" && (isAssignee || isPrivileged) && !hasPhaseAwaitingReview && (
           <TaskStatusButton
             taskId={task.id}
             targetStatus="submitted"
@@ -177,7 +188,7 @@ export default async function TaskDetailPage({
             <TaskRejectControl taskId={task.id} />
           </>
         )}
-        {isAssignee && !isLocked && (
+        {isCreator && !isLocked && (
           <TaskStatusButton
             taskId={task.id}
             targetStatus="terminated"
@@ -196,70 +207,33 @@ export default async function TaskDetailPage({
 
       {isCreator &&
         submittedPhases.map((phase) => (
-          <div key={phase.id} className="mt-3">
-            <PhaseDecision
-              parentType="task"
-              parentId={task.id}
-              phaseId={phase.id}
-              phaseName={phase.name}
-            />
+          <div key={phase.id} className="mt-3 shrink-0">
+            <PhaseDecision taskId={task.id} phaseId={phase.id} phaseName={phase.name} />
           </div>
         ))}
 
-      {/* Main split: activity log (left, ~70%) / chat (right, ~30%) */}
-      <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-10">
-        <Card className="flex flex-col lg:col-span-7">
+      {/* Main split: activity log (left, ~70%) / chat (right, ~30%), both filling remaining height */}
+      <div className="mt-6 grid min-h-0 flex-1 grid-cols-1 gap-6 lg:grid-cols-10">
+        <Card className="flex min-h-0 flex-col lg:col-span-7">
           <CardHeader
             title="Activity log"
             description={isLocked ? "Locked — this task is finished." : undefined}
           />
-          <CardBody>
+          <div className="min-h-0 flex-1 overflow-y-auto p-5">
             <Timeline entries={entries} />
-          </CardBody>
+          </div>
         </Card>
 
-        <Card className="flex h-[36rem] flex-col overflow-hidden lg:col-span-3 lg:h-auto">
+        <Card className="flex min-h-0 flex-col lg:col-span-3">
           <CardHeader
             title="Chat"
             description={`${chatMessages.length} message${chatMessages.length === 1 ? "" : "s"}`}
           />
           <div className="min-h-0 flex-1">
-            <ChatPanel parentType="task" parentId={task.id} messages={chatMessages} />
+            <ChatPanel taskId={task.id} messages={chatMessages} />
           </div>
         </Card>
       </div>
-
-      {/* Members */}
-      {(members ?? []).length > 0 && (
-        <Card className="mt-6">
-          <CardHeader title="Members" />
-          <CardBody>
-            <ul className="flex flex-wrap gap-4">
-              {(members ?? []).map((member) => {
-                const profile = member.profiles;
-                if (!profile) return null;
-                return (
-                  <li key={member.user_id} className="flex items-center gap-2">
-                    <Avatar
-                      name={profile.full_name || profile.email}
-                      avatarPath={profile.avatar_path}
-                      size="sm"
-                    />
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-medium text-zinc-900 dark:text-zinc-100">
-                        {profile.full_name || profile.email}
-                      </p>
-                      <p className="text-xs capitalize text-zinc-500 dark:text-zinc-400">
-                        {member.role}
-                      </p>
-                    </div>
-                  </li>
-                );
-              })}
-            </ul>
-          </CardBody>
-        </Card>
-      )}
     </div>
   );
 }

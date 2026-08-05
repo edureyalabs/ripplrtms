@@ -15,7 +15,8 @@ export async function createTask(
 ): Promise<TaskState> {
   const name = String(formData.get("name") ?? "").trim();
   const description = String(formData.get("description") ?? "").trim();
-  const projectId = String(formData.get("project_id") ?? "") || null;
+  let projectId = String(formData.get("project_id") ?? "") || null;
+  const newProjectName = String(formData.get("new_project_name") ?? "").trim();
   const startDate = String(formData.get("start_date") ?? "");
   const endDate = String(formData.get("end_date") ?? "");
   const assigneeIds = formData.getAll("assignee_ids").map(String).filter(Boolean);
@@ -27,11 +28,20 @@ export async function createTask(
   if (!name || !startDate || !endDate) {
     return { error: "Name, start date, and end date are required." };
   }
+  if (name.length > 400) {
+    return { error: "Task name must be 400 characters or fewer." };
+  }
+  if (description.length > 1000) {
+    return { error: "Description must be 1000 characters or fewer." };
+  }
   if (endDate < startDate) {
     return { error: "End date must be on or after the start date." };
   }
   if (assigneeIds.length === 0) {
     return { error: "At least one assignee is required." };
+  }
+  if (!projectId && newProjectName.length > 200) {
+    return { error: "Project name must be 200 characters or fewer." };
   }
 
   const today = new Date().toISOString().slice(0, 10);
@@ -48,6 +58,18 @@ export async function createTask(
     } = await supabase.auth.getUser();
     if (!user) {
       return { error: "You must be signed in." };
+    }
+
+    if (!projectId && newProjectName) {
+      const { data: project, error: projectError } = await supabase
+        .from("projects")
+        .insert({ name: newProjectName, created_by: user.id })
+        .select("id")
+        .single();
+      if (projectError || !project) {
+        throw new Error(projectError?.message ?? "Could not create the project.");
+      }
+      projectId = project.id;
     }
 
     const { data: task, error: taskError } = await supabase
@@ -123,6 +145,12 @@ export async function updateTaskDetails(
 
   if (!id || !name || !startDate || !endDate) {
     return { error: "Name, start date, and end date are required." };
+  }
+  if (name.length > 400) {
+    return { error: "Task name must be 400 characters or fewer." };
+  }
+  if (description.length > 1000) {
+    return { error: "Description must be 1000 characters or fewer." };
   }
   if (endDate < startDate) {
     return { error: "End date must be on or after the start date." };

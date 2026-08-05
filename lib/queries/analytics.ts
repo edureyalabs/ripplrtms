@@ -4,10 +4,6 @@ import type { Database } from "@/lib/types/database";
 export type ProjectSummary = {
   id: string;
   name: string;
-  status: string;
-  deadline: string;
-  leadName: string | null;
-  leadAvatarPath: string | null;
   totalTasks: number;
   completedTasks: number;
   overdueTasks: number;
@@ -17,11 +13,7 @@ export async function getProjectSummaries(
   supabase: SupabaseClient<Database>
 ): Promise<ProjectSummary[]> {
   const [{ data: projects }, { data: tasks }] = await Promise.all([
-    supabase
-      .from("projects")
-      .select("id, name, status, deadline, lead:profiles!projects_lead_id_fkey(full_name, email, avatar_path)")
-      .neq("status", "closed")
-      .order("deadline"),
+    supabase.from("projects").select("id, name").order("name"),
     supabase.from("tasks").select("project_id, status, end_date").not("project_id", "is", null),
   ]);
 
@@ -41,10 +33,6 @@ export async function getProjectSummaries(
     return {
       id: p.id,
       name: p.name,
-      status: p.status,
-      deadline: p.deadline,
-      leadName: p.lead ? p.lead.full_name || p.lead.email : null,
-      leadAvatarPath: p.lead?.avatar_path ?? null,
       totalTasks: bucket.total,
       completedTasks: bucket.completed,
       overdueTasks: bucket.overdue,
@@ -53,7 +41,7 @@ export async function getProjectSummaries(
 }
 
 export type CompanyPulse = {
-  activeProjects: number;
+  totalProjects: number;
   completedThisWeek: number;
   completedThisMonth: number;
   overdueTasks: number;
@@ -67,11 +55,8 @@ export async function getCompanyPulse(supabase: SupabaseClient<Database>): Promi
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
   const today = now.toISOString().slice(0, 10);
 
-  const [{ count: activeProjects }, { data: completions }, { count: overdueTasks }] = await Promise.all([
-    supabase
-      .from("projects")
-      .select("id", { count: "exact", head: true })
-      .in("status", ["open", "in_progress"]),
+  const [{ count: totalProjects }, { data: completions }, { count: overdueTasks }] = await Promise.all([
+    supabase.from("projects").select("id", { count: "exact", head: true }),
     supabase
       .from("task_events")
       .select("created_at")
@@ -87,26 +72,55 @@ export async function getCompanyPulse(supabase: SupabaseClient<Database>): Promi
 
   const rows = completions ?? [];
   return {
-    activeProjects: activeProjects ?? 0,
+    totalProjects: totalProjects ?? 0,
     completedThisWeek: rows.filter((e) => new Date(e.created_at) >= startOfWeek).length,
     completedThisMonth: rows.length,
     overdueTasks: overdueTasks ?? 0,
   };
 }
 
-export type DepartmentTask = {
+export type TaskRow = {
   id: string;
   name: string;
   status: string;
+  start_date: string;
   end_date: string;
+  createdByName: string;
   projectName: string | null;
   assigneeNames: string[];
 };
 
+const TASK_ROW_SELECT =
+  "id, name, status, start_date, end_date, projects(name), creator:profiles!tasks_created_by_fkey(full_name, email), task_members(role, profiles!task_members_user_id_fkey(full_name, email))";
+
+function mapTaskRow(t: {
+  id: string;
+  name: string;
+  status: string;
+  start_date: string;
+  end_date: string;
+  projects: { name: string } | null;
+  creator: { full_name: string; email: string } | null;
+  task_members: { role: string; profiles: { full_name: string; email: string } | null }[] | null;
+}): TaskRow {
+  return {
+    id: t.id,
+    name: t.name,
+    status: t.status,
+    start_date: t.start_date,
+    end_date: t.end_date,
+    createdByName: t.creator ? t.creator.full_name || t.creator.email : "—",
+    projectName: t.projects?.name ?? null,
+    assigneeNames: (t.task_members ?? [])
+      .filter((m) => m.role === "assignee" && m.profiles)
+      .map((m) => m.profiles!.full_name || m.profiles!.email),
+  };
+}
+
 export async function getDepartmentTasks(
   supabase: SupabaseClient<Database>,
   departmentId: string
-): Promise<DepartmentTask[]> {
+): Promise<TaskRow[]> {
   const { data: members } = await supabase
     .from("profiles")
     .select("id")
@@ -126,20 +140,22 @@ export async function getDepartmentTasks(
 
   const { data: tasks } = await supabase
     .from("tasks")
-    .select(
-      "id, name, status, end_date, projects(name), task_members(role, profiles!task_members_user_id_fkey(full_name, email))"
-    )
+    .select(TASK_ROW_SELECT)
     .in("id", taskIds)
     .order("end_date");
 
-  return (tasks ?? []).map((t) => ({
-    id: t.id,
-    name: t.name,
-    status: t.status,
-    end_date: t.end_date,
-    projectName: t.projects?.name ?? null,
-    assigneeNames: (t.task_members ?? [])
-      .filter((m) => m.role === "assignee" && m.profiles)
-      .map((m) => m.profiles!.full_name || m.profiles!.email),
-  }));
+  return (tasks ?? []).map(mapTaskRow);
+}
+
+export async function getProjectTasks(
+  supabase: SupabaseClient<Database>,
+  projectId: string
+): Promise<TaskRow[]> {
+  const { data: tasks } = await supabase
+    .from("tasks")
+    .select(TASK_ROW_SELECT)
+    .eq("project_id", projectId)
+    .order("end_date");
+
+  return (tasks ?? []).map(mapTaskRow);
 }

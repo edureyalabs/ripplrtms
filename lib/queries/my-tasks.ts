@@ -9,13 +9,14 @@ export type MyTask = {
   start_date: string;
   end_date: string;
   project: { id: string; name: string } | null;
+  createdByName: string;
 };
 
 export async function getMyTasks(supabase: SupabaseClient<Database>, userId: string): Promise<MyTask[]> {
   const { data, error } = await supabase
     .from("tasks")
     .select(
-      "id, name, status, start_date, end_date, projects(id, name), task_members!inner(user_id)"
+      "id, name, status, start_date, end_date, projects(id, name), creator:profiles!tasks_created_by_fkey(full_name, email), task_members!inner(user_id)"
     )
     .eq("task_members.user_id", userId)
     .order("end_date");
@@ -28,6 +29,7 @@ export async function getMyTasks(supabase: SupabaseClient<Database>, userId: str
     start_date: t.start_date,
     end_date: t.end_date,
     project: t.projects,
+    createdByName: t.creator ? t.creator.full_name || t.creator.email : "—",
   }));
 }
 

@@ -3,36 +3,24 @@
 import { useActionState, useState } from "react";
 import { SubmitButton } from "@/components/submit-button";
 import { Textarea } from "@/components/ui/form-field";
-import {
-  acceptTaskPhase,
-  rejectTaskPhase,
-  acceptProjectPhase,
-  rejectProjectPhase,
-  type PhaseState,
-} from "@/lib/actions/phases";
+import { acceptTaskPhase, rejectTaskPhase, type PhaseState } from "@/lib/actions/phases";
 
 export function PhaseDecision({
-  parentType,
-  parentId,
+  taskId,
   phaseId,
   phaseName,
 }: {
-  parentType: "task" | "project";
-  parentId: string;
+  taskId: string;
   phaseId: string;
   phaseName: string;
 }) {
-  const acceptAction = parentType === "task" ? acceptTaskPhase : acceptProjectPhase;
-  const rejectAction = parentType === "task" ? rejectTaskPhase : rejectProjectPhase;
-  const idField = parentType === "task" ? "task_id" : "project_id";
-
   const [rejecting, setRejecting] = useState(false);
   const [acceptState, acceptFormAction] = useActionState<PhaseState, FormData>(
-    acceptAction,
+    acceptTaskPhase,
     undefined
   );
   const [rejectState, rejectFormAction] = useActionState<PhaseState, FormData>(
-    rejectAction,
+    rejectTaskPhase,
     undefined
   );
 
@@ -45,7 +33,7 @@ export function PhaseDecision({
         <div className="flex items-center gap-2">
           <form action={acceptFormAction}>
             <input type="hidden" name="phase_id" value={phaseId} />
-            <input type="hidden" name={idField} value={parentId} />
+            <input type="hidden" name="task_id" value={taskId} />
             <SubmitButton
               pendingLabel="Accepting..."
               className="flex h-8 items-center justify-center rounded-md bg-emerald-600 px-3 text-xs font-semibold text-white transition-colors hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-70"
@@ -64,7 +52,7 @@ export function PhaseDecision({
       ) : (
         <form action={rejectFormAction} className="flex flex-col gap-2">
           <input type="hidden" name="phase_id" value={phaseId} />
-          <input type="hidden" name={idField} value={parentId} />
+          <input type="hidden" name="task_id" value={taskId} />
           <Textarea name="reason" placeholder="Why is this being sent back?" rows={2} required />
           <div className="flex gap-2">
             <SubmitButton

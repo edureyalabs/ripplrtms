@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { TASK_STATUS_LABEL, TASK_STATUS_TONE } from "@/lib/badge-tones";
 import { getMyTasks, getMyCompletionStats, summarizeTasks, prioritizeTasks } from "@/lib/queries/my-tasks";
 import { classifyUrgency, URGENCY_BADGE_TONE, URGENCY_LABEL } from "@/lib/urgency";
+import { ClickableRow } from "@/components/ui/clickable-row";
 
 export default async function DashboardPage() {
   const supabase = await createClient();
@@ -67,6 +68,7 @@ export default async function DashboardPage() {
                 <tr>
                   <th className="px-5 py-3 font-medium">Task</th>
                   <th className="px-5 py-3 font-medium">Project</th>
+                  <th className="px-5 py-3 font-medium">Created By</th>
                   <th className="px-5 py-3 font-medium">Start</th>
                   <th className="px-5 py-3 font-medium">Due</th>
                   <th className="px-5 py-3 font-medium">Status</th>
@@ -77,8 +79,9 @@ export default async function DashboardPage() {
                 {prioritized.map((task) => {
                   const urgency = classifyUrgency(task.end_date, task.status);
                   return (
-                    <tr
+                    <ClickableRow
                       key={task.id}
+                      href={`/dashboard/tasks/${task.id}`}
                       className="transition-colors hover:bg-surface-50 dark:hover:bg-surface-50-dark"
                     >
                       <td className="px-5 py-3">
@@ -92,6 +95,7 @@ export default async function DashboardPage() {
                       <td className="px-5 py-3 text-zinc-500 dark:text-zinc-400">
                         {task.project ? task.project.name : "—"}
                       </td>
+                      <td className="px-5 py-3 text-zinc-500 dark:text-zinc-400">{task.createdByName}</td>
                       <td className="px-5 py-3 text-zinc-500 dark:text-zinc-400">{task.start_date}</td>
                       <td className="px-5 py-3">
                         <div className="flex items-center gap-2">
@@ -115,7 +119,7 @@ export default async function DashboardPage() {
                           <PencilIcon />
                         </Link>
                       </td>
-                    </tr>
+                    </ClickableRow>
                   );
                 })}
               </tbody>

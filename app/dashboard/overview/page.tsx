@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { StatTile } from "@/components/ui/stat-tile";
@@ -74,7 +73,7 @@ export default async function OverviewPage() {
       <div className="mt-6 grid grid-cols-3 gap-2.5 sm:grid-cols-5 lg:grid-cols-9">
         {pulse && (
           <>
-            <StatTile label="Active Projects" value={pulse.activeProjects} size="sm" />
+            <StatTile label="Projects" value={pulse.totalProjects} size="sm" />
             <StatTile label="Overdue" value={pulse.overdueTasks} tone="danger" size="sm" />
             <StatTile label="Done (Wk)" value={pulse.completedThisWeek} tone="completed" size="sm" />
             <StatTile label="Done (Mo)" value={pulse.completedThisMonth} tone="completed" size="sm" />
@@ -110,32 +109,18 @@ export default async function OverviewPage() {
         </div>
       )}
 
-      {isCommandCenter && (
+      {isCommandCenter && projects.length > 0 && (
         <>
           <div className="mt-6 flex items-center justify-between">
             <h2 className="text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
               Projects
             </h2>
-            <Link
-              href="/dashboard/projects"
-              className="text-xs font-medium text-accent-600 hover:underline dark:text-accent-500"
-            >
-              View all
-            </Link>
           </div>
-          {projects.length === 0 ? (
-            <Card className="mt-3">
-              <p className="p-8 text-center text-sm text-zinc-500 dark:text-zinc-400">
-                No active projects.
-              </p>
-            </Card>
-          ) : (
-            <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-              {projects.map((project) => (
-                <ProjectSummaryCard key={project.id} project={project} />
-              ))}
-            </div>
-          )}
+          <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            {projects.map((project) => (
+              <ProjectSummaryCard key={project.id} project={project} />
+            ))}
+          </div>
         </>
       )}
     </div>

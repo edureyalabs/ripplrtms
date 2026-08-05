@@ -2,7 +2,12 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { TaskForm } from "@/components/tasks/task-form";
 
-export default async function NewTaskPage() {
+export default async function NewTaskPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ project?: string }>;
+}) {
+  const { project: defaultProjectId } = await searchParams;
   const supabase = await createClient();
   const {
     data: { user },
@@ -17,6 +22,8 @@ export default async function NewTaskPage() {
 
   if (!me) redirect("/");
 
+  const { data: projects } = await supabase.from("projects").select("id, name").order("name");
+
   if (me.role === "team_member") {
     return (
       <div>
@@ -26,7 +33,12 @@ export default async function NewTaskPage() {
         <h1 className="mt-2 text-2xl font-semibold tracking-tight text-zinc-950 dark:text-zinc-50">
           New Task
         </h1>
-        <TaskForm candidates={[]} fixedAssignee={me} />
+        <TaskForm
+          candidates={[]}
+          fixedAssignee={me}
+          projects={projects ?? []}
+          defaultProjectId={defaultProjectId}
+        />
       </div>
     );
   }
@@ -51,7 +63,11 @@ export default async function NewTaskPage() {
       <h1 className="mt-2 text-2xl font-semibold tracking-tight text-zinc-950 dark:text-zinc-50">
         New Task
       </h1>
-      <TaskForm candidates={candidates ?? []} />
+      <TaskForm
+        candidates={candidates ?? []}
+        projects={projects ?? []}
+        defaultProjectId={defaultProjectId}
+      />
     </div>
   );
 }
