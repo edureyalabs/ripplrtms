@@ -61,7 +61,7 @@ export function EditTaskDialog({
               <input type="hidden" name="id" value={taskId} />
 
               <FormField label="Task name" htmlFor="edit-name">
-                <TextInput id="edit-name" name="name" defaultValue={name} required />
+                <TextInput id="edit-name" name="name" defaultValue={name} required maxLength={400} />
               </FormField>
 
               <FormField label="Description" htmlFor="edit-description">
@@ -70,6 +70,7 @@ export function EditTaskDialog({
                   name="description"
                   defaultValue={description ?? ""}
                   rows={3}
+                  maxLength={1000}
                 />
               </FormField>
 

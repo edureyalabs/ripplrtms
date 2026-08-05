@@ -1,3 +1,5 @@
+import { AttachmentChip } from "@/components/ui/file-icon";
+
 export type TimelineEntry = {
   id: string;
   kind:
@@ -6,14 +8,15 @@ export type TimelineEntry = {
     | "phase_submitted"
     | "phase_accepted"
     | "phase_rejected"
-    | "manual_update";
+    | "manual_update"
+    | "review";
   actorName: string;
   fromStatus?: string | null;
   toStatus?: string | null;
   phaseName?: string | null;
   reason?: string | null;
   body?: string | null;
-  attachments?: { id: string; fileName: string; url: string }[];
+  attachments?: { id: string; fileName: string; mimeType: string; url: string }[];
   createdAt: string;
 };
 
@@ -31,6 +34,8 @@ function describe(entry: TimelineEntry) {
       return `${entry.actorName} rejected phase "${entry.phaseName}"`;
     case "manual_update":
       return `${entry.actorName} posted an update`;
+    case "review":
+      return `${entry.actorName} left a review`;
   }
 }
 
@@ -41,6 +46,7 @@ const DOT_TONE: Record<TimelineEntry["kind"], string> = {
   phase_accepted: "bg-emerald-500",
   phase_rejected: "bg-red-500",
   manual_update: "bg-zinc-400 dark:bg-zinc-500",
+  review: "bg-purple-500",
 };
 
 function EntryIcon({ kind }: { kind: TimelineEntry["kind"] }) {
@@ -82,6 +88,12 @@ function EntryIcon({ kind }: { kind: TimelineEntry["kind"] }) {
           <path d="M4 4a2 2 0 0 1 2-2h6l4 4v10a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4Zm7 0v3a1 1 0 0 0 1 1h3l-4-4Z" />
         </svg>
       );
+    case "review":
+      return (
+        <svg viewBox="0 0 20 20" fill="currentColor" className={common} aria-hidden="true">
+          <path d="M10 2.5 12.4 7l4.9.7-3.55 3.46L14.6 16 10 13.6 5.4 16l.85-4.84L2.7 7.7 7.6 7 10 2.5Z" />
+        </svg>
+      );
   }
 }
 
@@ -117,7 +129,13 @@ export function Timeline({ entries }: { entries: TimelineEntry[] }) {
           <div className="min-w-0 flex-1 pb-0.5">
             <p className="text-sm text-zinc-800 dark:text-zinc-200">{describe(entry)}</p>
             {entry.body && (
-              <p className="mt-1.5 whitespace-pre-wrap rounded-md bg-surface-50 px-3 py-2 text-sm text-zinc-700 dark:bg-surface-50-dark dark:text-zinc-300">
+              <p
+                className={`mt-1.5 whitespace-pre-wrap rounded-md px-3 py-2 text-sm ${
+                  entry.kind === "review"
+                    ? "bg-purple-50 text-purple-800 dark:bg-purple-950/30 dark:text-purple-300"
+                    : "bg-surface-50 text-zinc-700 dark:bg-surface-50-dark dark:text-zinc-300"
+                }`}
+              >
                 {entry.body}
               </p>
             )}
@@ -130,14 +148,7 @@ export function Timeline({ entries }: { entries: TimelineEntry[] }) {
               <ul className="mt-2 flex flex-wrap gap-2">
                 {entry.attachments.map((att) => (
                   <li key={att.id}>
-                    <a
-                      href={att.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center rounded-md border border-surface-border bg-surface-50 px-2.5 py-1 text-xs font-medium text-zinc-700 hover:bg-surface-100 dark:border-surface-border-dark dark:bg-surface-50-dark dark:text-zinc-300"
-                    >
-                      {att.fileName}
-                    </a>
+                    <AttachmentChip fileName={att.fileName} mimeType={att.mimeType} url={att.url} />
                   </li>
                 ))}
               </ul>

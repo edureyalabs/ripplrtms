@@ -4,65 +4,50 @@ import { useActionState } from "react";
 import { createTask, type TaskState } from "@/lib/actions/tasks";
 import { FormField, TextInput, Textarea, Checkbox } from "@/components/ui/form-field";
 import { PhaseListInput } from "@/components/phases/phase-list-input";
+import { ProjectSelect } from "@/components/tasks/project-select";
 import { SubmitButton } from "@/components/submit-button";
 
 type Candidate = { id: string; full_name: string; email: string };
 
 export function TaskForm({
-  projectId,
   candidates,
-  minDate,
-  maxDate,
   fixedAssignee,
+  projects,
+  defaultProjectId,
 }: {
-  projectId?: string;
   candidates: Candidate[];
-  minDate?: string;
-  maxDate?: string;
   /** When set (e.g. a Team Member creating their own task), skip the picker and self-assign. */
   fixedAssignee?: Candidate;
+  projects: { id: string; name: string }[];
+  defaultProjectId?: string;
 }) {
   const [state, formAction] = useActionState<TaskState, FormData>(createTask, undefined);
   const today = new Date().toISOString().slice(0, 10);
-  const effectiveMinDate = minDate && minDate > today ? minDate : today;
 
   return (
     <form action={formAction} className="mt-8 flex max-w-2xl flex-col gap-4">
-      {projectId && <input type="hidden" name="project_id" value={projectId} />}
       {fixedAssignee && (
         <input type="hidden" name="assignee_ids" value={fixedAssignee.id} />
       )}
 
       <FormField label="Task name" htmlFor="name">
-        <TextInput id="name" name="name" required />
+        <TextInput id="name" name="name" required maxLength={400} />
       </FormField>
 
       <FormField label="Goal" htmlFor="description" hint="What does done look like?">
-        <Textarea id="description" name="description" rows={3} />
+        <Textarea id="description" name="description" rows={3} maxLength={1000} />
       </FormField>
+
+      <ProjectSelect projects={projects} defaultProjectId={defaultProjectId} />
 
       <PhaseListInput hint="Optional. These become the checkpoints the assignee submits one by one." />
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <FormField label="Start date" htmlFor="start_date" hint="Today or later.">
-          <TextInput
-            id="start_date"
-            name="start_date"
-            type="date"
-            required
-            min={effectiveMinDate}
-            max={maxDate}
-          />
+          <TextInput id="start_date" name="start_date" type="date" required min={today} />
         </FormField>
         <FormField label="Deadline" htmlFor="end_date">
-          <TextInput
-            id="end_date"
-            name="end_date"
-            type="date"
-            required
-            min={effectiveMinDate}
-            max={maxDate}
-          />
+          <TextInput id="end_date" name="end_date" type="date" required min={today} />
         </FormField>
       </div>
 

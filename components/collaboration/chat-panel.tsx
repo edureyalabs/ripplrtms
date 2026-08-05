@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useEffect, useRef } from "react";
-import { postTaskMessage, postProjectMessage, type MessageState } from "@/lib/actions/messages";
+import { postTaskMessage, type MessageState } from "@/lib/actions/messages";
 import { TextInput } from "@/components/ui/form-field";
 import { SubmitButton } from "@/components/submit-button";
 import { Avatar } from "@/components/ui/avatar";
@@ -15,16 +15,13 @@ type Message = {
 };
 
 export function ChatPanel({
-  parentType,
-  parentId,
+  taskId,
   messages,
 }: {
-  parentType: "task" | "project";
-  parentId: string;
+  taskId: string;
   messages: Message[];
 }) {
-  const action = parentType === "task" ? postTaskMessage : postProjectMessage;
-  const [state, formAction] = useActionState<MessageState, FormData>(action, undefined);
+  const [state, formAction] = useActionState<MessageState, FormData>(postTaskMessage, undefined);
   const scrollRef = useRef<HTMLDivElement>(null);
   const formRef = useRef<HTMLFormElement>(null);
 
@@ -81,7 +78,7 @@ export function ChatPanel({
         action={formAction}
         className="flex items-center gap-2 border-t border-surface-border p-3 dark:border-surface-border-dark"
       >
-        <input type="hidden" name={parentType === "task" ? "task_id" : "project_id"} value={parentId} />
+        <input type="hidden" name="task_id" value={taskId} />
         <TextInput
           name="body"
           placeholder="Message the team..."

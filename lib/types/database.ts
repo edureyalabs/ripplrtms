@@ -347,36 +347,36 @@ export type Database = {
         Row: {
           created_at: string
           created_by: string
-          deadline: string
+          deadline: string | null
           description: string | null
           id: string
-          lead_id: string
+          lead_id: string | null
           name: string
-          start_date: string
+          start_date: string | null
           status: Database["public"]["Enums"]["project_status"]
           updated_at: string
         }
         Insert: {
           created_at?: string
           created_by: string
-          deadline: string
+          deadline?: string | null
           description?: string | null
           id?: string
-          lead_id: string
+          lead_id?: string | null
           name: string
-          start_date: string
+          start_date?: string | null
           status?: Database["public"]["Enums"]["project_status"]
           updated_at?: string
         }
         Update: {
           created_at?: string
           created_by?: string
-          deadline?: string
+          deadline?: string | null
           description?: string | null
           id?: string
-          lead_id?: string
+          lead_id?: string | null
           name?: string
-          start_date?: string
+          start_date?: string | null
           status?: Database["public"]["Enums"]["project_status"]
           updated_at?: string
         }
@@ -722,16 +722,16 @@ export type Database = {
       department_task_rollup: {
         Args: { p_department_id: string }
         Returns: {
-          dept_head_id: string | null
-          dept_head_name: string | null
-          dept_head_avatar_path: string | null
+          completed_count: number
+          dept_head_avatar_path: string
+          dept_head_id: string
+          dept_head_name: string
+          in_progress_count: number
           member_count: number
           open_count: number
-          in_progress_count: number
-          submitted_count: number
-          completed_count: number
-          overdue_not_started_count: number
           overdue_deadline_count: number
+          overdue_not_started_count: number
+          submitted_count: number
         }[]
       }
       reject_project_phase: {
@@ -772,6 +772,7 @@ export type Database = {
         | "phase_accepted"
         | "phase_rejected"
         | "manual_update"
+        | "review"
       user_role: "admin" | "ceo" | "dept_head" | "team_member"
     }
     CompositeTypes: {
@@ -916,6 +917,7 @@ export const Constants = {
         "phase_accepted",
         "phase_rejected",
         "manual_update",
+        "review",
       ],
       user_role: ["admin", "ceo", "dept_head", "team_member"],
     },

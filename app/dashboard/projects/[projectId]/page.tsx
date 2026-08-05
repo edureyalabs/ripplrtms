@@ -1,25 +1,11 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { Card, CardHeader, CardBody } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Avatar } from "@/components/ui/avatar";
-import { PROJECT_STATUS_LABEL, PROJECT_STATUS_TONE, TASK_STATUS_LABEL, TASK_STATUS_TONE } from "@/lib/badge-tones";
-import { classifyUrgency, URGENCY_BADGE_TONE, URGENCY_LABEL } from "@/lib/urgency";
-import { ProjectStatusButton } from "@/components/projects/status-button";
-import { AddMemberForm, RemoveMemberButton } from "@/components/projects/member-actions";
-import { Stepper } from "@/components/ui/stepper";
-import { SubmitPhasesForm } from "@/components/phases/submit-phases-form";
-import { PhaseDecision } from "@/components/phases/phase-decision";
-import { PhaseList } from "@/components/phases/phase-list";
-import { AddPhaseForm } from "@/components/phases/add-phase-form";
-import { Tabs } from "@/components/ui/tabs";
-import { Timeline } from "@/components/ui/timeline";
-import { UpdateForm } from "@/components/collaboration/update-form";
-import { ChatPanel } from "@/components/collaboration/chat-panel";
-import { getProjectTimeline } from "@/lib/queries/timeline";
+import { StatTile } from "@/components/ui/stat-tile";
+import { TaskTable } from "@/components/tasks/task-table";
+import { getProjectTasks } from "@/lib/queries/analytics";
 
-export default async function ProjectDetailPage({
+export default async function ProjectTasksPage({
   params,
 }: {
   params: Promise<{ projectId: string }>;
@@ -32,294 +18,51 @@ export default async function ProjectDetailPage({
   } = await supabase.auth.getUser();
   if (!user) redirect("/");
 
-  const [
-    { data: project },
-    { data: members },
-    { data: me },
-    { data: tasks },
-    { data: phases },
-    { data: messages },
-    timeline,
-  ] = await Promise.all([
-    supabase
-      .from("projects")
-      .select(
-        "id, name, description, status, start_date, deadline, lead_id, created_by, lead:profiles!projects_lead_id_fkey(full_name, email, avatar_path)"
-      )
-      .eq("id", projectId)
-      .single(),
-    supabase
-      .from("project_members")
-      .select("user_id, profiles!project_members_user_id_fkey(full_name, email, avatar_path, role)")
-      .eq("project_id", projectId),
-    supabase.from("profiles").select("id, role").eq("id", user.id).single(),
-    supabase
-      .from("tasks")
-      .select("id, name, status, end_date")
-      .eq("project_id", projectId)
-      .order("end_date"),
-    supabase
-      .from("project_phases")
-      .select("id, name, status")
-      .eq("project_id", projectId)
-      .order("position"),
-    supabase
-      .from("project_messages")
-      .select(
-        "id, body, created_at, sender:profiles!project_messages_sender_id_fkey(full_name, email, avatar_path)"
-      )
-      .eq("project_id", projectId)
-      .order("created_at"),
-    getProjectTimeline(supabase, projectId),
-  ]);
+  const { data: project } = await supabase
+    .from("projects")
+    .select("id, name")
+    .eq("id", projectId)
+    .single();
 
-  if (!project) {
-    notFound();
-  }
+  if (!project) notFound();
 
-  const isCreator = project.created_by === user.id || me?.role === "admin" || me?.role === "ceo";
-  const memberIds = new Set((members ?? []).map((m) => m.user_id));
-  const isMember = memberIds.has(user.id) || isCreator;
-
-  const { data: candidates } = isCreator
-    ? await supabase
-        .from("profiles")
-        .select("id, full_name, email")
-        .eq("is_active", true)
-        .not("role", "is", null)
-    : { data: [] as { id: string; full_name: string; email: string }[] };
-
-  const availableCandidates = (candidates ?? []).filter((c) => !memberIds.has(c.id));
-
-  const chatMessages = (messages ?? []).map((m) => ({
-    id: m.id,
-    body: m.body,
-    created_at: m.created_at,
-    senderName: m.sender ? m.sender.full_name || m.sender.email : "Someone",
-    senderAvatarPath: m.sender?.avatar_path ?? null,
-  }));
+  const tasks = await getProjectTasks(supabase, projectId);
+  const completed = tasks.filter((t) => t.status === "completed").length;
+  const inProgress = tasks.filter((t) => t.status === "in_progress").length;
+  const overdue = tasks.filter(
+    (t) => !["completed", "terminated"].includes(t.status) && t.end_date < new Date().toISOString().slice(0, 10)
+  ).length;
 
   return (
     <div>
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-accent-600 dark:text-accent-500">
-            Project
-          </p>
-          <h1 className="mt-2 text-2xl font-semibold tracking-tight text-zinc-950 dark:text-zinc-50">
-            {project.name}
-          </h1>
-          <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
-            {project.start_date} → {project.deadline}
-          </p>
-        </div>
-        <Badge tone={PROJECT_STATUS_TONE[project.status]}>
-          {PROJECT_STATUS_LABEL[project.status]}
-        </Badge>
+      <p className="text-xs font-semibold uppercase tracking-[0.2em] text-accent-600 dark:text-accent-500">
+        Project
+      </p>
+      <div className="mt-2 flex flex-wrap items-center justify-between gap-4">
+        <h1 className="text-2xl font-semibold tracking-tight text-zinc-950 dark:text-zinc-50">
+          {project.name}
+        </h1>
+        <Link
+          href={`/dashboard/tasks/new?project=${project.id}`}
+          className="flex h-10 items-center justify-center gap-1.5 rounded-md bg-accent-600 px-4 text-sm font-semibold text-white transition-colors hover:bg-accent-500 dark:bg-accent-500 dark:hover:bg-accent-600"
+        >
+          New Task
+        </Link>
+      </div>
+      <p className="mt-1.5 text-sm text-zinc-500 dark:text-zinc-400">
+        Every task tagged under this project.
+      </p>
+
+      <div className="mt-6 grid grid-cols-2 gap-2.5 sm:grid-cols-4">
+        <StatTile label="Total Tasks" value={tasks.length} size="sm" />
+        <StatTile label="In Progress" value={inProgress} tone="progress" size="sm" />
+        <StatTile label="Completed" value={completed} tone="completed" size="sm" />
+        <StatTile label="Overdue" value={overdue} tone="danger" size="sm" />
       </div>
 
-      {project.description && (
-        <p className="mt-4 max-w-2xl text-sm text-zinc-600 dark:text-zinc-400">
-          {project.description}
-        </p>
-      )}
-
-      <div className="mt-6 flex flex-wrap gap-3">
-        {project.status === "open" && isMember && (
-          <ProjectStatusButton
-            projectId={project.id}
-            targetStatus="in_progress"
-            label="Start Project"
-            pendingLabel="Starting..."
-          />
-        )}
-        {project.status === "in_progress" && isCreator && (
-          <ProjectStatusButton
-            projectId={project.id}
-            targetStatus="completed"
-            label="Mark Completed"
-            pendingLabel="Completing..."
-          />
-        )}
-        {project.status === "completed" && isCreator && (
-          <ProjectStatusButton
-            projectId={project.id}
-            targetStatus="closed"
-            label="Close Project"
-            pendingLabel="Closing..."
-            variant="outline"
-          />
-        )}
+      <div className="mt-6">
+        <TaskTable tasks={tasks} emptyLabel="No tasks tagged with this project yet." />
       </div>
-
-      <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-3">
-        <Card className="lg:col-span-2">
-          <CardHeader
-            title="Tasks"
-            description="Phase progress, timeline, and chat are coming soon."
-            action={
-              isMember && (
-                <Link
-                  href={`/dashboard/projects/${project.id}/tasks/new`}
-                  className="flex h-8 items-center justify-center rounded-md border border-surface-border px-3 text-xs font-medium text-zinc-700 transition-colors hover:bg-surface-50 dark:border-surface-border-dark dark:text-zinc-300 dark:hover:bg-surface-50-dark"
-                >
-                  New Task
-                </Link>
-              )
-            }
-          />
-          <CardBody>
-            {!tasks || tasks.length === 0 ? (
-              <p className="text-sm text-zinc-500 dark:text-zinc-400">No tasks yet.</p>
-            ) : (
-              <ul className="flex flex-col divide-y divide-surface-border dark:divide-surface-border-dark">
-                {tasks.map((task) => {
-                  const urgency = classifyUrgency(task.end_date, task.status);
-                  return (
-                    <li key={task.id} className="flex items-center justify-between gap-3 py-2.5">
-                      <Link
-                        href={`/dashboard/tasks/${task.id}`}
-                        className="truncate text-sm font-medium text-zinc-900 hover:text-accent-600 dark:text-zinc-100 dark:hover:text-accent-500"
-                      >
-                        {task.name}
-                      </Link>
-                      <div className="flex shrink-0 items-center gap-2">
-                        <span className="text-xs text-zinc-400 dark:text-zinc-600">
-                          {task.end_date}
-                        </span>
-                        {urgency !== "later" && urgency !== "done" && (
-                          <Badge tone={URGENCY_BADGE_TONE[urgency]}>{URGENCY_LABEL[urgency]}</Badge>
-                        )}
-                        <Badge tone={TASK_STATUS_TONE[task.status]}>
-                          {TASK_STATUS_LABEL[task.status]}
-                        </Badge>
-                      </div>
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
-          </CardBody>
-        </Card>
-
-        <Card>
-          <CardHeader title="Phases" description="Independent of sub-task status." />
-          <CardBody>
-            {!phases || phases.length === 0 ? (
-              <p className="text-sm text-zinc-500 dark:text-zinc-400">No phases yet.</p>
-            ) : (
-              <>
-                <Stepper phases={phases} />
-                <PhaseList
-                  parentType="project"
-                  parentId={project.id}
-                  phases={phases}
-                  canManage={isCreator && project.status !== "closed"}
-                />
-                {isMember &&
-                  project.status !== "closed" && (
-                    <SubmitPhasesForm
-                      parentType="project"
-                      parentId={project.id}
-                      pendingPhases={phases.filter((p) => p.status === "pending")}
-                    />
-                  )}
-                {isCreator && (
-                  <div className="mt-3 flex flex-col gap-2">
-                    {phases
-                      .filter((p) => p.status === "submitted")
-                      .map((phase) => (
-                        <PhaseDecision
-                          key={phase.id}
-                          parentType="project"
-                          parentId={project.id}
-                          phaseId={phase.id}
-                          phaseName={phase.name}
-                        />
-                      ))}
-                  </div>
-                )}
-              </>
-            )}
-            {isCreator && project.status !== "closed" && (
-              <div className="mt-4 border-t border-surface-border pt-3 dark:border-surface-border-dark">
-                <AddPhaseForm parentType="project" parentId={project.id} />
-              </div>
-            )}
-          </CardBody>
-        </Card>
-
-        <Card>
-          <CardHeader title="Members" />
-          <CardBody className="flex flex-col gap-4">
-            <ul className="flex flex-col gap-3">
-              {(members ?? []).map((member) => {
-                const profile = member.profiles;
-                if (!profile) return null;
-                const isLead = member.user_id === project.lead_id;
-                return (
-                  <li key={member.user_id} className="flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <Avatar
-                        name={profile.full_name || profile.email}
-                        avatarPath={profile.avatar_path}
-                        size="sm"
-                      />
-                      <div className="min-w-0">
-                        <p className="truncate text-sm font-medium text-zinc-900 dark:text-zinc-100">
-                          {profile.full_name || profile.email}
-                        </p>
-                        {isLead && (
-                          <p className="text-xs text-accent-600 dark:text-accent-500">Lead</p>
-                        )}
-                      </div>
-                    </div>
-                    {isCreator && !isLead && (
-                      <RemoveMemberButton projectId={project.id} userId={member.user_id} />
-                    )}
-                  </li>
-                );
-              })}
-            </ul>
-
-            {isCreator && (
-              <AddMemberForm projectId={project.id} candidates={availableCandidates} />
-            )}
-          </CardBody>
-        </Card>
-      </div>
-
-      <Card className="mt-6">
-        <CardHeader
-          title="Activity"
-          description={project.status === "closed" ? "Locked — this project is closed." : undefined}
-        />
-        <CardBody>
-          <Tabs
-            tabs={[
-              {
-                key: "timeline",
-                label: "Timeline",
-                content: (
-                  <div className="flex flex-col gap-4">
-                    {isMember && project.status !== "closed" && (
-                      <UpdateForm parentType="project" parentId={project.id} />
-                    )}
-                    <Timeline entries={timeline} />
-                  </div>
-                ),
-              },
-              {
-                key: "chat",
-                label: "Chat",
-                content: (
-                  <ChatPanel parentType="project" parentId={project.id} messages={chatMessages} />
-                ),
-              },
-            ]}
-          />
-        </CardBody>
-      </Card>
     </div>
   );
 }
