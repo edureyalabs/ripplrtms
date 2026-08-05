@@ -204,6 +204,30 @@ export async function updateTaskStatus(
   revalidatePath("/dashboard");
 }
 
+export async function deleteTask(_prevState: TaskState, formData: FormData): Promise<TaskState> {
+  const id = String(formData.get("id") ?? "");
+  if (!id) return { error: "Missing task." };
+
+  let projectId: string | null = null;
+
+  try {
+    const supabase = await createClient();
+    const { data: task } = await supabase.from("tasks").select("project_id").eq("id", id).single();
+    projectId = task?.project_id ?? null;
+
+    const { error } = await supabase.from("tasks").delete().eq("id", id);
+    if (error) throw new Error(error.message);
+  } catch (err) {
+    return { error: getErrorMessage(err, "Could not delete the task.") };
+  }
+
+  revalidatePath("/dashboard");
+  revalidatePath("/dashboard/overview");
+  revalidatePath("/dashboard/overview/tasks");
+  if (projectId) revalidatePath(`/dashboard/projects/${projectId}`);
+  redirect(projectId ? `/dashboard/projects/${projectId}` : "/dashboard");
+}
+
 export async function rejectTaskSubmission(
   _prevState: TaskState,
   formData: FormData

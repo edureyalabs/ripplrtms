@@ -3,6 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { StatTile } from "@/components/ui/stat-tile";
 import { TaskTable } from "@/components/tasks/task-table";
+import { DeleteProjectButton } from "@/components/projects/delete-project-button";
 import { getProjectTasks } from "@/lib/queries/analytics";
 
 export default async function ProjectTasksPage({
@@ -26,6 +27,9 @@ export default async function ProjectTasksPage({
 
   if (!project) notFound();
 
+  const { data: me } = await supabase.from("profiles").select("role").eq("id", user.id).single();
+  const isPrivileged = me?.role === "admin" || me?.role === "ceo";
+
   const tasks = await getProjectTasks(supabase, projectId);
   const completed = tasks.filter((t) => t.status === "completed").length;
   const inProgress = tasks.filter((t) => t.status === "in_progress").length;
@@ -42,12 +46,15 @@ export default async function ProjectTasksPage({
         <h1 className="text-2xl font-semibold tracking-tight text-zinc-950 dark:text-zinc-50">
           {project.name}
         </h1>
-        <Link
-          href={`/dashboard/tasks/new?project=${project.id}`}
-          className="flex h-10 items-center justify-center gap-1.5 rounded-md bg-accent-600 px-4 text-sm font-semibold text-white transition-colors hover:bg-accent-500 dark:bg-accent-500 dark:hover:bg-accent-600"
-        >
-          New Task
-        </Link>
+        <div className="flex items-center gap-2">
+          <Link
+            href={`/dashboard/tasks/new?project=${project.id}`}
+            className="flex h-10 items-center justify-center gap-1.5 rounded-md bg-accent-600 px-4 text-sm font-semibold text-white transition-colors hover:bg-accent-500 dark:bg-accent-500 dark:hover:bg-accent-600"
+          >
+            New Task
+          </Link>
+          {isPrivileged && <DeleteProjectButton projectId={project.id} />}
+        </div>
       </div>
       <p className="mt-1.5 text-sm text-zinc-500 dark:text-zinc-400">
         Every task tagged under this project.
